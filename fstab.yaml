@@ -1,6 +1,6 @@
 mountpoints:
   /:
-    url: https://content-stg.ssa-da.live/ams-eds/da-live-ams/
+    url: https://content.ent-da.live/ams-eds/da-live-ams/
     type: markup
 
 folders:
