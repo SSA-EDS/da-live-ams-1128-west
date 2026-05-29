@@ -1,5 +1,5 @@
-export const CON_ORIGIN = 'https://content-stg.ssa-da.live';
-export const AEM_ORIGIN = 'https://admin.gov-aem.page';
+export const CON_ORIGIN = 'https://content.ent-da.live';
+export const AEM_ORIGIN = 'https://admin.ent-aem.page';
 
 export const SUPPORTED_FILES = {
   html: 'text/html',
@@ -18,13 +18,13 @@ const DA_ADMIN_ENVS = {
   // stage: 'https://stage-admin.da.live',
   // prod: 'https://admin.da.live',
   stage: 'https://stg-admin.ssa-da.live',
-  prod: 'https://admin.ssa-da.live',
+  prod: 'https://admin.ent-da.live',
 };
 
 const DA_COLLAB_ENVS = {
   local: 'ws://localhost:4711',
   stage: 'wss://stg-collab.ssa-da.live',
-  prod: 'wss://collab.da.live',
+  prod: 'wss://collab.ent-da.live',
 };
 
 function getDaEnv(location, key, envs) {
