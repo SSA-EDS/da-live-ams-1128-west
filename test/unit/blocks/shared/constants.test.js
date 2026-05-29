@@ -7,30 +7,30 @@ describe('DA Admin', () => {
   it('Sets DA admin default', () => {
     const env = getDaAdmin();
     // expect(env).to.equal('https://admin.da.live');
-    expect(env).to.equal('https://admin.ssa-da.live');
+    expect(env).to.equal('https://admin.ent-da.live');
   });
 
   it('Sets DA admin stage', () => {
     const env = getDaAdmin({ href: 'http://localhost:3000/?da-admin=stage' });
     // expect(env).to.equal('https://stage-admin.da.live');
-    expect(env).to.equal('https://stg-admin.ssa-da.live');
+    expect(env).to.equal('https://admin.ent-da.live');
   });
 
   it('Gets cached DA admin stage', () => {
     const env = getDaAdmin();
     // expect(env).to.equal('https://stage-admin.da.live');
-    expect(env).to.equal('https://stg-admin.ssa-da.live');
+    expect(env).to.equal('https://admin.ent-da.live');
   });
 
   it('Resets DA admin', () => {
     const env = getDaAdmin({ href: 'http://localhost:3000/?da-admin=reset' });
     // expect(env).to.equal('https://admin.da.live');
-    expect(env).to.equal('https://admin.ssa-da.live');
+    expect(env).to.equal('https://admin.ent-da.live');
   });
 });
 
 describe('DA Collab', () => {
   it('Gets DA Collab default', () => {
-    expect(COLLAB_ORIGIN).to.equal('wss://collab.da.live');
+    expect(COLLAB_ORIGIN).to.equal('wss://collab.ent-da.live');
   });
 });
