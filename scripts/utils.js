@@ -30,6 +30,7 @@ export const [setNx, getNx] = (() => {
         const branch = sanitiseRef(new URLSearchParams(search).get('nx')) || 'main';
         // TODO: adopt da-nx code over nexter code.
         if (hostname.includes('gov-aem')) return `https://${branch}--da-nx-ams--ams-eds.gov-aem.live/nx`;
+        if (hostname.includes('ent-aem') || hostname.includes('ent-da')) return `https://${branch}--da-nx-ams-1128-west--ssa-eds.ent-aem.live/nx`;
         if (!(hostname.includes('.hlx.') || hostname.includes('.aem.') || hostname.includes('local'))) return nxBase;
         // const branch = sanitiseRef(new URLSearchParams(search).get('nx')) || 'main';
         if (branch === 'local') return 'http://localhost:6456/nx';

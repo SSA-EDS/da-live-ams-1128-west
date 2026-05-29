@@ -56,5 +56,5 @@ loadPage();
 // Side-effects
 (async function loadDa() {
   if (!new URL(window.location.href).searchParams.get('dapreview')) return;
-  import('https://stg.ssa-da.live/scripts/dapreview.js').then(({ default: daPreview }) => daPreview(loadPage));
+  import('https://ent-da.live/scripts/dapreview.js').then(({ default: daPreview }) => daPreview(loadPage));
 }());

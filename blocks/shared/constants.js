@@ -17,13 +17,13 @@ const DA_ADMIN_ENVS = {
   local: 'http://localhost:8787',
   // stage: 'https://stage-admin.da.live',
   // prod: 'https://admin.da.live',
-  stage: 'https://stg-admin.ssa-da.live',
+  stage: 'https://admin.ent-da.live',
   prod: 'https://admin.ent-da.live',
 };
 
 const DA_COLLAB_ENVS = {
   local: 'ws://localhost:4711',
-  stage: 'wss://stg-collab.ssa-da.live',
+  stage: 'wss://collab.ent-da.live',
   prod: 'wss://collab.ent-da.live',
 };
 
@@ -35,10 +35,8 @@ function getDaEnv(location, key, envs) {
   } else if (query) {
     localStorage.setItem(key, query);
   }
-  const isStage = location.origin.includes('stg.ssa-da');
-  const defaultEnv = isStage ? 'stage' : 'prod';
-  const env = envs[localStorage.getItem(key) || defaultEnv];
-  return location.origin === 'https://stg.ssa-da.page' ? env.replace('.live', '.page') : env;
+  const env = envs[localStorage.getItem(key) || 'prod'];
+  return location.origin === 'https://ent-da.page' ? env.replace('.live', '.page') : env;
 }
 
 export const getDaAdmin = (() => {
