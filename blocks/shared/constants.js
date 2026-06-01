@@ -1,5 +1,5 @@
-export const CON_ORIGIN = 'https://content.da.live';
-export const AEM_ORIGIN = 'https://admin.hlx.page';
+export const CON_ORIGIN = 'https://content.ent-da.live';
+export const AEM_ORIGIN = 'https://admin.ent-aem.page';
 
 export const SUPPORTED_FILES = {
   html: 'text/html',
@@ -15,14 +15,16 @@ export const SUPPORTED_FILES = {
 
 const DA_ADMIN_ENVS = {
   local: 'http://localhost:8787',
-  stage: 'https://stage-admin.da.live',
-  prod: 'https://admin.da.live',
+  // stage: 'https://stage-admin.da.live',
+  // prod: 'https://admin.da.live',
+  stage: 'https://admin.ent-da.live',
+  prod: 'https://admin.ent-da.live',
 };
 
 const DA_COLLAB_ENVS = {
   local: 'ws://localhost:4711',
-  stage: 'wss://stage-collab.da.live',
-  prod: 'wss://collab.da.live',
+  stage: 'wss://collab.ent-da.live',
+  prod: 'wss://collab.ent-da.live',
 };
 
 function getDaEnv(location, key, envs) {
@@ -34,8 +36,7 @@ function getDaEnv(location, key, envs) {
     localStorage.setItem(key, query);
   }
   const env = envs[localStorage.getItem(key) || 'prod'];
-  // TODO: INFRA
-  return location.origin === 'https://da.page' ? env.replace('.live', '.page') : env;
+  return location.origin === 'https://ent-da.page' ? env.replace('.live', '.page') : env;
 }
 
 export const getDaAdmin = (() => {

@@ -123,7 +123,7 @@ export default class DaTitle extends LitElement {
       const url = new URL(href);
       const isSnap = url.pathname.startsWith('/.snapshots');
       const toOpen = isSnap ? this.getSnapshotHref(url, action) : this.getCdnHref(url, action, cdn);
-      const toOpenInAem = toOpen.replace('.hlx.', '.aem.');
+      const toOpenInAem = toOpen.replace('.hlx.', '.ent-aem.');
       window.open(`${toOpenInAem}?nocache=${Date.now()}`, toOpenInAem);
     }
     if (this.details.view === 'edit' && action === 'publish') saveDaVersion(pathname);

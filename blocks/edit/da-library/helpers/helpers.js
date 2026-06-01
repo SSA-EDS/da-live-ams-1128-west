@@ -97,8 +97,8 @@ async function getDaLibraries(owner, repo) {
 }
 
 async function getAemPlugins(owner, repo) {
-  const origin = ref === 'local' ? 'http://localhost:3000' : `https://${ref}--${repo}--${owner}.aem.live`;
-  const confUrl = ref === 'local' ? 'http://localhost:3000/tools/sidekick/config.json' : `https://admin.hlx.page/sidekick/${owner}/${repo}/${ref}/config.json`;
+  const origin = ref === 'local' ? 'http://localhost:3000' : `https://${ref}--${repo}--${owner}.ent-aem.live`;
+  const confUrl = ref === 'local' ? 'http://localhost:3000/tools/sidekick/config.json' : `https://admin.ent-aem.page/sidekick/${owner}/${repo}/${ref}/config.json`;
   const resp = await daFetch(confUrl);
   if (!resp.ok) return [];
   const json = await resp.json();
@@ -158,7 +158,7 @@ function calculateSources(org, repo, sheetPath) {
     if (ref === 'local') return `http://localhost:3000${path}`;
 
     // Fallback to the ref in search param (defaults to main)
-    return `https://${ref}--${repo}--${org}.aem.live${path}`;
+    return `https://${ref}--${repo}--${org}.ent-aem.live${path}`;
   });
 }
 

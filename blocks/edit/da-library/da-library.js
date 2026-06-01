@@ -387,7 +387,7 @@ class DaLibrary extends LitElement {
       <li class="da-library-asset-item">
         <button class="da-library-type-asset-btn"
           @click=${() => this.handleItemClick(item)}>
-          <img src="https://content.da.live${item.path}" />
+          <img src="https://content.ent-da.live${item.path}" />
           <svg class="icon"><use href="#spectrum-AddCircle"/></svg>
         </button>
       </li>`;

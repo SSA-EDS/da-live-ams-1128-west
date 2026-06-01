@@ -39,7 +39,7 @@ async function bulkAemAdmin(org, site, files) {
   const body = JSON.stringify({ paths, forceUpdate: true, forceSync: true });
   const opts = { body, method: 'POST', headers: { 'Content-Type': 'application/json' } };
 
-  const aemUrl = `https://admin.hlx.page/preview/${org}/${site}/main/*`;
+  const aemUrl = `https://admin.ent-aem.page/preview/${org}/${site}/main/*`;
   const resp = await daFetch(aemUrl, opts);
   if (!resp.ok) return { type: 'error', message: 'Error previewing', status: resp.status };
 

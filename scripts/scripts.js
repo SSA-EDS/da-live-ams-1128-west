@@ -16,8 +16,8 @@ const nx = setNx('/nx');
 const STYLES = '/styles/styles.css';
 const CONFIG = {
   codeBase,
-  imsClientId: 'darkalley',
-  imsScope: 'ab.manage,AdobeID,gnav,openid,org.read,read_organizations,session,aem.frontend.all,additional_info.ownerOrg,additional_info.projectedProductContext,account_cluster.read',
+  imsClientId: 'ssa-eds',
+  imsScope: 'ab.manage,AdobeID,gnav,openid,org.read,read_organizations,session,additional_info.ownerOrg,additional_info.projectedProductContext,account_cluster.read',
   decorateArea,
 };
 
@@ -56,5 +56,5 @@ loadPage();
 // Side-effects
 (async function loadDa() {
   if (!new URL(window.location.href).searchParams.get('dapreview')) return;
-  import('https://da.live/scripts/dapreview.js').then(({ default: daPreview }) => daPreview(loadPage));
+  import('https://ent-da.live/scripts/dapreview.js').then(({ default: daPreview }) => daPreview(loadPage));
 }());

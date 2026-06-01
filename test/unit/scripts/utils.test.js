@@ -4,7 +4,8 @@ import { setNx } from '../../../scripts/utils.js';
 describe('Libs', () => {
   it('Default Libs', () => {
     const libs = setNx('/nx');
-    expect(libs).to.equal('https://main--da-nx--adobe.aem.live/nx');
+    // expect(libs).to.equal('https://main--da-nx--adobe.aem.live/nx');
+    expect(libs).to.equal('https://main-ams--da-nx-ams--ams-eds.gov-aem.live/nx');
   });
 
   it('Does not support NX query param on prod', () => {
@@ -22,7 +23,7 @@ describe('Libs', () => {
       search: '?nx=foo',
     };
     const libs = setNx('/nx', location);
-    expect(libs).to.equal('https://foo--da-nx--adobe.aem.live/nx');
+    expect(libs).to.equal('https://foo--da-nx-ams--ams-eds.gov-aem.live/nx');
   });
 
   it('Supports local NX query param', () => {
