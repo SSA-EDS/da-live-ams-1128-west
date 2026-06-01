@@ -16,8 +16,8 @@ const nx = setNx('/nx');
 const STYLES = '/styles/styles.css';
 const CONFIG = {
   codeBase,
-  imsClientId: 'darkalley',
-  imsScope: 'ab.manage,AdobeID,gnav,openid,org.read,read_organizations,session,aem.frontend.all,additional_info.ownerOrg,additional_info.projectedProductContext,account_cluster.read',
+  imsClientId: 'ssa-eds',
+  imsScope: 'ab.manage,AdobeID,gnav,openid,org.read,read_organizations,session,additional_info.ownerOrg,additional_info.projectedProductContext,account_cluster.read',
   decorateArea,
 };
 
