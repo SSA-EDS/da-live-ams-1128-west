@@ -139,7 +139,7 @@ export default class DaSites extends LitElement {
             @keydown="${() => { this._urlError = false; }}"
             @change="${() => { this._urlError = false; }}" 
             type="text" name="siteUrl" 
-            placeholder="https://main--site--org.aem.page" 
+            placeholder="https://main--site--org.ent-aem.page" 
             class="${this._urlError ? 'error' : nothing}" 
         />
         <div class="da-form-btn-offset">
