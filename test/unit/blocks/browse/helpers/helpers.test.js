@@ -238,7 +238,7 @@ describe('items2Clipboard', () => {
       items2Clipboard([
         { ext: 'html', path: '/org/repo/page.html', message: 'Note' },
       ]);
-      expect(lastBlobText).to.equal(`https://main--repo--org.ent-aem.page/page - Note`);
+      expect(lastBlobText).to.equal('https://main--repo--org.ent-aem.page/page - Note');
     } finally {
       window.Blob = RealBlob;
     }

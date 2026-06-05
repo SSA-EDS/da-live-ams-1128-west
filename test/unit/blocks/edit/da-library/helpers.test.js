@@ -204,7 +204,7 @@ describe('da-library/helpers exports', () => {
       const calls = [];
       window.fetch = (url) => {
         calls.push(url);
-        const status = url.startsWith('https://content.da.live/') ? 404 : 200;
+        const status = url.startsWith('https://content.ent-da.live/') ? 404 : 200;
         return Promise.resolve(new Response('', { status }));
       };
       const { resp, usedFallback } = await daFetchLibrary('https://main--repo--org.ent-aem.live/page');
