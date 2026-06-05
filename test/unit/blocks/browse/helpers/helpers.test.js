@@ -198,7 +198,7 @@ describe('items2Clipboard', () => {
       ];
       items2Clipboard(items);
       expect(lastBlobText).to.equal(
-        `https://main--repo--org.ent-aem.page/folder/page\nhttps://main--repo--org.ent-aem.page/folder/`,
+        'https://main--repo--org.ent-aem.page/folder/page\nhttps://main--repo--org.ent-aem.page/folder/',
       );
       expect(captured).to.have.length(1);
       // Make linter happy by referring to readBlobText
