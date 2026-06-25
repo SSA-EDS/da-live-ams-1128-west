@@ -63,7 +63,7 @@ export const [setNx, getNx] = (() => {
       nx = (() => {
         const { hostname, search } = location || window.location;
         const nxBaseParam = sanitizeName(new URLSearchParams(search).get('nx'));
-        const isProd = !(hostname.includes('.aem.') || hostname.includes('local'));
+        const isProd = !(hostname.includes('.aem.') || hostname.includes('.ent-aem.') || hostname.includes('local'));
 
         // If no custom nexter branch & on prod, use the default CDN route
         if (!nxBaseParam && isProd) return nxVerBase;
@@ -75,7 +75,7 @@ export const [setNx, getNx] = (() => {
         if (branch === 'local') return `http://localhost:6456${nxVerBase}`;
 
         // Otherwise use a fully qualified branch
-        return `https://${branch}--da-nx--adobe.aem.live${nxVerBase}`;
+        return `https://${branch}--da-nx-ams-1128-west--ssa-eds.ent-aem.live${nxVerBase}`;
       })();
       return nx;
     }, () => nx,

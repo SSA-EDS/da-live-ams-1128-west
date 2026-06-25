@@ -1,8 +1,16 @@
 import { DA_ORIGIN, CON_ORIGIN, DA_ETC_ORIGIN, getLivePreviewUrl, AEM_ORIGIN } from './constants.js';
 import { getNx, getNx2Api } from '../../scripts/utils.js';
 
-const DA_ORIGINS = ['https://da.live', 'https://da.page', 'https://admin.da.live', 'https://admin.da.page', 'https://stage-admin.da.live', 'https://content.da.live', 'http://localhost:8787'];
-const AEM_ORIGINS = ['https://admin.hlx.page', 'https://admin.aem.live'];
+// const DA_ORIGINS = ['https://da.live', 'https://da.page', 'https://admin.da.live', 'https://admin.da.page', 'https://stage-admin.da.live', 'https://content.da.live', 'http://localhost:8787'];
+const DA_ORIGINS = [
+  'https://ent-da.live', // PROD
+  'https://ent-da.page', // PROD
+  'https://admin.ent-da.live', // PROD
+  'https://admin.ent-da.page', // PROD
+  'https://content.ent-da.live', // PROD
+  'http://localhost:8787'];
+
+const AEM_ORIGINS = ['https://admin.ent-aem.page', 'https://admin.ent-aem.live'];
 const ETC_ORIGINS = ['https://stage-content.da.live', 'https://helix-snapshot-scheduler-ci.adobeaem.workers.dev', 'https://helix-snapshot-scheduler-prod.adobeaem.workers.dev'];
 const ALLOWED_TOKEN = [...DA_ORIGINS, ...AEM_ORIGINS, ...ETC_ORIGINS];
 
@@ -132,7 +140,7 @@ export async function aemAdmin(path, api, method = 'POST') {
   const [owner, repo, ...parts] = path.slice(1).split('/');
   const name = parts.pop() || repo || owner;
   parts.push(name.replace('.html', ''));
-  const aemUrl = `https://admin.hlx.page/${api}/${owner}/${repo}/main/${parts.join('/')}`;
+  const aemUrl = `https://admin.ent-aem.page/${api}/${owner}/${repo}/main/${parts.join('/')}`;
   const resp = await daFetch(aemUrl, { method });
   if (method === 'DELETE' && resp.status === 204) return {};
   if (!resp.ok) return undefined;

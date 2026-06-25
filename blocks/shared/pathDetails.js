@@ -51,7 +51,7 @@ function getRepoDetails({ editor, pathParts, ext }) {
     parent,
     parentName,
     sourceUrl: `${DA_ORIGIN}/${daApi}/${path}`,
-    previewUrl: `https://main--${repo}--${org}.aem.live`,
+    previewUrl: `https://main--${repo}--${org}.ent-aem.live`,
     contentUrl: `${CON_ORIGIN}/${fullPath}`,
   };
 }
@@ -83,7 +83,7 @@ function getFullDetails({ editor, pathParts, ext }) {
     parent: ext === null ? `${parent}/${name}` : parent,
     parentName: ext === null ? name : parentName,
     sourceUrl: `${DA_ORIGIN}/${daApi}/${path}`,
-    previewUrl: `https://main--${repo}--${org}.aem.live${pathname}`,
+    previewUrl: `https://main--${repo}--${org}.ent-aem.live${pathname}`,
     contentUrl: `${CON_ORIGIN}/${fullPath}`,
   };
 }

@@ -142,7 +142,7 @@ export function items2Clipboard(items) {
       const pageName = pathParts.pop();
       pathParts.push(pageName === 'index' ? '' : pageName);
 
-      const url = `https://main--${site}--${org}.aem.page/${pathParts.join('/')}`;
+      const url = `https://main--${site}--${org}.ent-aem.page/${pathParts.join('/')}`;
       const toPush = item.message ? `${url} - ${item.message}` : url;
 
       acc.push(toPush);
