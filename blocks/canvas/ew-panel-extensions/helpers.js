@@ -2,6 +2,7 @@
 import { DOMParser as PMDOMParser, DOMSerializer, Slice, TextSelection } from 'da-y-wrapper';
 import { getNx } from '../../../scripts/utils.js';
 import { aemAdmin, daFetch } from '../../shared/utils.js';
+import { htmlToProse } from '../../edit/utils/helpers.js';
 import { getExtensionsBridge } from '../editor-utils/extensions-bridge.js';
 
 const { hashChange } = await import(`${getNx()}/utils/utils.js`);
@@ -219,16 +220,19 @@ function mergePlugin(list, plugin) {
 }
 
 export async function fetchExtensions(org, site) {
-  const configs = fetchDaConfigs({ org, site });
-  const siteConfig = await configs[configs.length - 1];
-  if (siteConfig?.error) return [];
+  const configs = await Promise.all(fetchDaConfigs({ org, site }));
+  const validConfigs = configs.filter((conf) => !conf?.error).reverse();
+  if (!validConfigs.length) return [];
 
-  const rows = siteConfig?.library?.data;
-  if (!Array.isArray(rows)) return [];
+  const rows = validConfigs.flatMap((conf) => conf?.library?.data || []);
+  if (!rows.length) return [];
 
+  const seen = new Set();
   const extensions = rows.reduce((acc, row) => {
     if (!row.title || !getIsPluginAllowed(row.ref)) return acc;
     const name = row.title.trim().toLowerCase().replaceAll(' ', '-');
+    if (seen.has(name)) return acc;
+    seen.add(name);
     acc.push({
       name,
       title: row.title.trim(),
@@ -242,8 +246,8 @@ export async function fetchExtensions(org, site) {
   }, []);
 
   try {
-    const siteEntries = getFirstSheet(siteConfig) || [];
-    const hasRepo = siteEntries.find((e) => e.key === 'aem.repositoryId')?.value;
+    const entries = validConfigs.flatMap((conf) => getFirstSheet(conf) || []);
+    const hasRepo = entries.find((entry) => entry.key === 'aem.repositoryId')?.value;
     if (hasRepo) {
       const { getAssetsPlugin } = await import('./aem-assets.js');
       const plugin = getAssetsPlugin({ org, site });
@@ -339,8 +343,8 @@ export async function insertTemplate(view, url) {
   const resp = await daFetch(url);
   if (!resp.ok) return;
   const html = (await resp.text()).replace('class="template-metadata"', 'class="metadata"');
-  const doc = new window.DOMParser().parseFromString(html, 'text/html');
-  const parsed = PMDOMParser.fromSchema(view.state.schema).parse(doc.body);
+  const { dom } = htmlToProse(html);
+  const parsed = PMDOMParser.fromSchema(view.state.schema).parse(dom);
   view.dispatch(view.state.tr.replaceSelectionWith(parsed).scrollIntoView());
 }
 
@@ -474,7 +478,8 @@ function extensionToPanelView(ext, section) {
  */
 export async function getCanvasToolPanelViews({ org, site }) {
   const extensions = await fetchExtensions(org, site);
-  const library = sortLibraryExtensions(extensions.filter(isLibraryExtension));
+  const library = sortLibraryExtensions(extensions.filter(isLibraryExtension))
+    .filter((ext) => ext.name !== 'blocks');
   const thirdParty = extensions.filter((ext) => !isLibraryExtension(ext));
 
   return [
