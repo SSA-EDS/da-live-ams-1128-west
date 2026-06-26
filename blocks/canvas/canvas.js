@@ -1,11 +1,5 @@
 import { getNx } from '../../scripts/utils.js';
 import { editorSelectChange } from './editor-utils/editor-utils.js';
-import {
-  normalizeCanvasEditorView,
-  readInitialCanvasEditorView,
-  persistCanvasEditorView,
-} from './utils/view.js';
-import { shouldAutoOpenAfterPanel } from './utils/panel.js';
 import './ew-canvas-header/ew-canvas-header.js';
 import './ew-editor-doc/ew-editor-doc.js';
 import './ew-editor-wysiwyg/ew-editor-wysiwyg.js';
@@ -15,9 +9,6 @@ import {
   installEditorSplitDrag,
   removeSplitGutter,
 } from './ew-editor-split/ew-editor-split.js';
-import { resolveEditorDocSession } from './ew-editor-doc/utils/load-editor-doc.js';
-import { sourceUrlFromEditorCtx } from './ew-editor-doc/utils/ctx.js';
-import { SEL_BLOCK, SEL_ITEM, SEL_TEXT } from './ew-editor-doc/utils/selection.js';
 
 const { loadStyle, hashChange } = await import(`${getNx()}/utils/utils.js`);
 const { getPanelStore, openPanel } = await import(`${getNx()}/utils/panel.js`);
@@ -31,12 +22,36 @@ function buildCanvasDocPath(state) {
   return `${org}/${site}/${path}`;
 }
 
+const CANVAS_EDITOR_VIEW_KEY = 'nx-canvas-editor-view';
+
+function normalizeCanvasEditorView(view) {
+  if (view === 'content') return 'content';
+  if (view === 'split') return 'split';
+  return 'layout';
+}
+
 function notifyCanvasEditorActive(mountRoot, view) {
   const v = normalizeCanvasEditorView(view);
   mountRoot.dispatchEvent(new CustomEvent('nx-canvas-editor-active', {
     bubbles: false,
     detail: { view: v },
   }));
+}
+
+function readPersistedCanvasEditorView() {
+  try {
+    return normalizeCanvasEditorView(sessionStorage.getItem(CANVAS_EDITOR_VIEW_KEY));
+  } catch {
+    return 'layout';
+  }
+}
+
+function persistCanvasEditorView(view) {
+  try {
+    sessionStorage.setItem(CANVAS_EDITOR_VIEW_KEY, normalizeCanvasEditorView(view));
+  } catch {
+    /* ignore if browser disallows session storage */
+  }
 }
 
 function canvasEditorMountRoot(block) {
@@ -54,24 +69,6 @@ function removeCanvasEditors(mountRoot) {
   mountRoot.querySelector('ew-editor-doc')?.remove();
   mountRoot.querySelector('ew-editor-wysiwyg')?.remove();
 }
-
-function showNotPermitted(mountRoot, message) {
-  let el = mountRoot.querySelector('.nx-not-permitted');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'nx-not-permitted';
-    mountRoot.append(el);
-  }
-  el.textContent = message;
-}
-
-function removeNotPermitted(mountRoot) {
-  mountRoot.querySelector('.nx-not-permitted')?.remove();
-}
-
-// Incremented on each load to prevent stale network requests
-// from overwriting the current editor session.
-let editorLoadCount = 0;
 
 function ensureNxEditorDoc(mountRoot) {
   let el = mountRoot.querySelector('ew-editor-doc');
@@ -95,9 +92,7 @@ function editorCtxFromHashState(state, fullPath) {
   return { org: state.org, repo: state.site, path: fullPath };
 }
 
-async function syncCanvasEditorsToHash({ mountRoot, header, state }) {
-  editorLoadCount += 1;
-  const loadCount = editorLoadCount;
+function syncCanvasEditorsToHash({ mountRoot, header, state }) {
   header.undoAvailable = false;
   header.redoAvailable = false;
   const fullPath = buildCanvasDocPath(state);
@@ -105,25 +100,11 @@ async function syncCanvasEditorsToHash({ mountRoot, header, state }) {
   document.title = `${name ? `Edit ${name} | ` : ''}Experience Workspace`;
   if (!fullPath) {
     removeCanvasEditors(mountRoot);
-    removeNotPermitted(mountRoot);
-    header.authorized = true;
     return;
   }
   const ctx = editorCtxFromHashState(state, fullPath);
-  const session = await resolveEditorDocSession(sourceUrlFromEditorCtx(ctx));
-  if (loadCount !== editorLoadCount) return;
-  if (!session.ok) {
-    removeCanvasEditors(mountRoot);
-    showNotPermitted(mountRoot, session.error);
-    header.authorized = false;
-    return;
-  }
-  removeNotPermitted(mountRoot);
-  header.authorized = true;
-  const docEl = ensureNxEditorDoc(mountRoot);
-  docEl.session = session;
-  docEl.ctx = ctx;
   ensureNxEditorWysiwyg(mountRoot).ctx = ctx;
+  ensureNxEditorDoc(mountRoot).ctx = ctx;
   finalizeSplitEditorMountOrder(mountRoot);
   notifyCanvasEditorActive(mountRoot, header.editorView);
   syncEditorSplitLayout({ mountRoot, view: header.editorView });
@@ -135,8 +116,6 @@ async function syncToolPanelViews(toolPanel, { org, site }) {
   toolPanel.dataset.extKey = key ?? '';
 
   if (!key) {
-    toolPanel.org = undefined;
-    toolPanel.site = undefined;
     toolPanel.views = [];
     return;
   }
@@ -144,8 +123,6 @@ async function syncToolPanelViews(toolPanel, { org, site }) {
   const { getCanvasToolPanelViews } = await import('./ew-panel-extensions/helpers.js');
   const views = await getCanvasToolPanelViews({ org, site });
   if (toolPanel.dataset.extKey !== key) return;
-  toolPanel.org = org;
-  toolPanel.site = site;
   toolPanel.views = views;
 }
 
@@ -171,9 +148,9 @@ function hashState() {
   return { org: org || undefined, site: site || undefined };
 }
 
-async function openCanvasPanel(position, { panelName } = {}) {
+async function openCanvasPanel(position, { preferredViewId } = {}) {
   const config = CANVAS_PANELS[position];
-  if (!config) return undefined;
+  if (!config) return;
   const store = getPanelStore();
   const width = store[position]?.width ?? config.width;
   const aside = await openPanel({ position, width, getContent: config.getContent });
@@ -182,19 +159,18 @@ async function openCanvasPanel(position, { panelName } = {}) {
     if (toolPanel) {
       await syncToolPanelViews(toolPanel, hashState());
       await toolPanel.updateComplete;
-      if (panelName && toolPanel.views?.some((v) => v.id === panelName)) {
-        await toolPanel.showPanel(panelName);
+      if (preferredViewId && toolPanel.views?.some((v) => v.id === preferredViewId)) {
+        await toolPanel.showView(preferredViewId);
       }
     }
   }
-  return aside;
 }
 
-async function installCanvasHeader(block, { org, site }) {
+function installCanvasHeader(block) {
   const header = document.createElement('ew-canvas-header');
-  header.editorView = await readInitialCanvasEditorView({ org, site });
+  header.editorView = readPersistedCanvasEditorView();
   header.addEventListener('nx-canvas-open-panel', (e) => {
-    openCanvasPanel(e.detail.position, { panelName: e.detail.panelName });
+    openCanvasPanel(e.detail.position, { preferredViewId: e.detail.viewId });
   });
   header.addEventListener('nx-canvas-editor-view', (e) => {
     const view = normalizeCanvasEditorView(e.detail?.view);
@@ -214,8 +190,7 @@ async function installCanvasHeader(block, { org, site }) {
 }
 
 export default async function decorate(block) {
-  const { org, site } = hashState();
-  const header = await installCanvasHeader(block, { org, site });
+  const header = installCanvasHeader(block);
 
   const mountRoot = canvasEditorMountRoot(block);
   mountRoot.classList.add('nx-canvas-editor-mount');
@@ -233,68 +208,37 @@ export default async function decorate(block) {
     if (toolPanel) syncToolPanelViews(toolPanel, state);
   });
 
-  document.addEventListener('nx-open-chat-panel', async ({ detail }) => {
-    const aside = await openCanvasPanel('before');
-    if (!detail?.text) return;
-    aside?.querySelector('nx-chat')?.setPrompt(detail.text, { autoSend: detail.autoSend });
-  });
-
   const store = getPanelStore();
   if (store.before && !store.before.fragment) openCanvasPanel('before');
-  if (store.after && !store.after.fragment) {
-    openCanvasPanel('after');
-  } else {
-    shouldAutoOpenAfterPanel({ org, site }).then((open) => {
-      if (open) openCanvasPanel('after');
-    });
-  }
+  if (store.after && !store.after.fragment) openCanvasPanel('after');
 
-  // Any non-empty selection in doc mode is sent as chat context.
+  // Only NodeSelection (explicit block handle click) in doc mode qualifies as intentional context.
   // wysiwyg has no block-select equivalent yet — see docs/canvas-events.md.
   const CANVAS_CHAT_KEY = 'canvas-selection';
-  const SELECTION_LABEL = 'Selection';
-  let hasContext = false;
+  let hasExplicitBlock = false;
   editorSelectChange.subscribe(({
-    blockIndex, blockName, proseIndex, innerText, source,
-    selectionType, selectedHTML, selFrom, selTo,
+    blockIndex, blockName, proseIndex, innerText, source, explicit,
   }) => {
     if (source !== 'doc') return;
-    const isBlock = selectionType === SEL_BLOCK && blockIndex >= 0 && !!blockName;
-    const isContent = selectionType === SEL_TEXT || selectionType === SEL_ITEM;
-    if (!isBlock && !isContent) {
-      if (hasContext) {
-        hasContext = false;
+    if (!explicit) {
+      if (hasExplicitBlock) {
+        hasExplicitBlock = false;
         document.dispatchEvent(new CustomEvent('nx-add-to-chat', { detail: { key: CANVAS_CHAT_KEY } }));
       }
       return;
     }
-    hasContext = true;
-    const detail = isBlock
+    const hasBlock = blockIndex >= 0 && !!blockName;
+    hasExplicitBlock = hasBlock;
+    const detail = hasBlock
       ? {
         key: CANVAS_CHAT_KEY,
         id: CANVAS_CHAT_KEY,
-        type: SEL_BLOCK,
         label: blockName,
         blockName,
         proseIndex,
         innerText,
-        selectionType,
-        selFrom,
-        selTo,
-        pinnable: true,
       }
-      : {
-        key: CANVAS_CHAT_KEY,
-        id: CANVAS_CHAT_KEY,
-        type: SEL_TEXT,
-        label: SELECTION_LABEL,
-        proseIndex: typeof proseIndex === 'number' ? proseIndex : selFrom,
-        innerHTML: selectedHTML,
-        selectionType,
-        selFrom,
-        selTo,
-        pinnable: true,
-      };
+      : { key: CANVAS_CHAT_KEY };
     document.dispatchEvent(new CustomEvent('nx-add-to-chat', { detail }));
   });
 }

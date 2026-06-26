@@ -14,7 +14,7 @@ export default class DaContent extends LitElement {
     wsProvider: { attribute: false },
     _editorLoaded: { state: true },
     _showPane: { state: true },
-    _versionId: { state: true },
+    _versionUrl: { state: true },
     _versionLabel: { state: true },
     _externalUrl: { state: true },
   };
@@ -64,12 +64,12 @@ export default class DaContent extends LitElement {
   }
 
   handleVersionReset() {
-    this._versionId = null;
+    this._versionUrl = null;
     this._versionLabel = null;
   }
 
   handleVersionPreview({ detail }) {
-    this._versionId = detail.versionId;
+    this._versionUrl = detail.url;
     this._versionLabel = detail.label || detail.date || '';
   }
 
@@ -81,7 +81,7 @@ export default class DaContent extends LitElement {
       <div class="editor-wrapper">
         <da-editor
           path="${this.details.sourceUrl}"
-          .versionId=${this._versionId}
+          version="${this._versionUrl}"
           .versionLabel=${this._versionLabel}
           .permissions=${this.permissions}
           .proseEl=${this.proseEl}

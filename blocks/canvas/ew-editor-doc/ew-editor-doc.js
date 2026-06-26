@@ -13,7 +13,6 @@ import {
   editorDocRenderPhase,
 } from './utils/ctx.js';
 import { subscribeCollabUserList } from './utils/awareness-users.js';
-import { describeDocSelection, applyHighlight, SEL_BLOCK } from './utils/selection.js';
 import {
   prefetchWysiwygCookiesIfSignedIn,
   wireQuickEditControllerPort,
@@ -24,7 +23,7 @@ import { createTrackingPlugin } from '../editor-utils/prose-diff.js';
 import { resolveEditorDocSession } from './utils/load-editor-doc.js';
 import { afterNextPaint, ensureProseMountedInShadow } from './utils/shadow-mount.js';
 import { teardownEditorDocResources } from './utils/teardown.js';
-import { hideSelectionToolbar, setSelectionToolbarCtx } from '../editor-utils/selection-toolbar.js';
+import { hideSelectionToolbar } from '../editor-utils/selection-toolbar.js';
 import { createExtensionsBridgePlugin } from '../editor-utils/extensions-bridge.js';
 
 const { loadStyle } = await import(`${getNx()}/utils/utils.js`);
@@ -34,7 +33,6 @@ const style = await loadStyle(import.meta.url);
 export class EwEditorDoc extends LitElement {
   static properties = {
     ctx: { type: Object },
-    session: { type: Object },
     quickEditPort: { type: Object },
     _error: { state: true },
   };
@@ -44,10 +42,8 @@ export class EwEditorDoc extends LitElement {
     if (changed.has('ctx')) {
       this.quickEditPort = undefined;
       this._teardown();
-      setSelectionToolbarCtx();
       this._error = undefined;
       this._lastDocBlockIndex = undefined;
-      this._lastDocSelKey = undefined;
       editorHtmlChange.emit('');
     }
   }
@@ -111,7 +107,6 @@ export class EwEditorDoc extends LitElement {
     if (pos == null) return;
     this._lastDocBlockIndex = blockIndex;
     const sel = NodeSelection.create(view.state.doc, pos);
-    this._lastDocSelKey = `${sel.from}|${sel.to}|node`;
     view.dispatch(view.state.tr.setSelection(sel).scrollIntoView());
   }
 
@@ -189,7 +184,7 @@ export class EwEditorDoc extends LitElement {
 
     const sourceUrl = sourceUrlFromEditorCtx(this.ctx);
 
-    const session = this.session ?? await resolveEditorDocSession(sourceUrl);
+    const session = await resolveEditorDocSession(sourceUrl);
     if (!session.ok) {
       this._error = session.error;
       return;
@@ -215,24 +210,17 @@ export class EwEditorDoc extends LitElement {
             (data) => { if (this._controllerCtx) getEditor(data, this._controllerCtx); },
             (pmView) => {
               const blockIndex = getActiveBlockIndex(pmView);
-              const { kind, ...descriptor } = describeDocSelection(pmView);
-              const selKey = `${descriptor.selFrom}|${descriptor.selTo}|${kind}`;
-              if (blockIndex === this._lastDocBlockIndex && selKey === this._lastDocSelKey) return;
+              if (blockIndex === this._lastDocBlockIndex) return;
               this._lastDocBlockIndex = blockIndex;
-              this._lastDocSelKey = selKey;
-              editorSelectChange.emit({
-                blockIndex,
-                source: 'doc',
-                explicit: descriptor.selectionType === SEL_BLOCK,
-                ...descriptor,
-              });
+              const sel = pmView.state.selection;
+              const explicit = sel instanceof NodeSelection && sel.$from.depth === 0;
+              editorSelectChange.emit({ blockIndex, source: 'doc', explicit });
             },
           ),
         ],
       });
 
       this._proseContext = { proseEl, wsProvider, view, ydoc, undoManager };
-      setSelectionToolbarCtx({ org: this.ctx?.org, site: this.ctx?.repo, sourceUrl });
       this._setupAwareness(wsProvider);
       this._observeUndoManager(undoManager);
       this._emitHtmlChange();
@@ -268,21 +256,13 @@ export class EwEditorDoc extends LitElement {
       .subscribe(({ blockIndex, source }) => {
         if (source !== 'doc') this._scrollDocToBlock(blockIndex);
       });
-    this._onCanvasHighlight = (e) => this._applyHighlight(e.detail);
-    document.addEventListener('nx-highlight-selection', this._onCanvasHighlight);
-  }
-
-  _applyHighlight(detail) {
-    applyHighlight(this._proseContext?.view, detail);
   }
 
   disconnectedCallback() {
     this.parentElement?.removeEventListener('nx-canvas-editor-active', this._onCanvasEditorActive);
     this.parentElement?.removeEventListener('nx-wysiwyg-port-ready', this._onWysiwygPortReady);
-    document.removeEventListener('nx-highlight-selection', this._onCanvasHighlight);
     this._unsubscribeSelect?.();
     this._teardown();
-    setSelectionToolbarCtx();
     super.disconnectedCallback();
   }
 

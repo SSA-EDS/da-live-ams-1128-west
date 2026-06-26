@@ -68,11 +68,11 @@ describe('sheet/utils utils', () => {
   });
 
   describe('staleCheck after restore', () => {
-    const DETAILS = { org: 'org', site: 'repo', path: '/sheet', view: 'sheet' };
+    const SOURCE_URL = 'http://example.com/source/org/repo/sheet';
     const serverJson = { ':type': 'sheet', ':sheetname': 'data', data: [{ key: 'a' }] };
 
     beforeEach(() => {
-      staleCheck.start({ details: DETAILS, onStale: () => {} });
+      staleCheck.start({ url: SOURCE_URL, onStale: () => {} });
       staleCheck.markSynced(serverJson);
     });
 

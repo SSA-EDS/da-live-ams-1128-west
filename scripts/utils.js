@@ -92,5 +92,3 @@ export const getNx2Api = () => {
   nx2ApiPromise ??= import(`${getNx2()}/utils/api.js`);
   return nx2ApiPromise;
 };
-
-export const getNxEWFlags = () => import(`${getNx2()}/utils/ewFlags.js`);

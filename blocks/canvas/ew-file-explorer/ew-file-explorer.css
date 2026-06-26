@@ -92,13 +92,8 @@
   color: var(--s2-gray-600);
   margin: 0;
 
-  &.centered {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font: var(--nx-font-body, 14px/1.4 system-ui, sans-serif);
+  &.error {
+    color: var(--s2-red-700);
   }
 }
 

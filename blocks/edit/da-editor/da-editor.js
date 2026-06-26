@@ -1,8 +1,7 @@
 import { DOMParser as proseDOMParser } from 'da-y-wrapper';
 import { LitElement, html, nothing } from 'da-lit';
 import getSheet from '../../shared/sheet.js';
-import { initIms } from '../../shared/utils.js';
-import { getNx2Api } from '../../../scripts/utils.js';
+import { initIms, daFetch } from '../../shared/utils.js';
 import { setDaMetadata, htmlToProse } from '../utils/helpers.js';
 
 const sheet = await getSheet('/blocks/edit/da-editor/da-editor.css');
@@ -26,7 +25,7 @@ async function loadDaCompare() {
 export default class DaEditor extends LitElement {
   static properties = {
     path: { type: String },
-    versionId: { attribute: false },
+    version: { type: String },
     versionLabel: { attribute: false },
     proseEl: { attribute: false },
     wsProvider: { attribute: false },
@@ -46,12 +45,7 @@ export default class DaEditor extends LitElement {
 
   async fetchVersion() {
     this._versionDom = null;
-    // A version belongs to the open doc, so derive org/site/path from this.path
-    // and let versions.get build the right URL for either backend.
-    const { versions } = await getNx2Api();
-    const { pathname } = new URL(this.path);
-    const [, , org, site, ...parts] = pathname.split('/');
-    const resp = await versions.get({ org, site, path: `/${parts.join('/')}`, versionId: this.versionId });
+    const resp = await daFetch(this.version);
     if (!resp.ok) return;
     const text = await resp.text();
 
@@ -136,7 +130,7 @@ export default class DaEditor extends LitElement {
   }
 
   async updated(props) {
-    if (props.has('versionId') && this.versionId) {
+    if (props.has('version') && this.version) {
       this.fetchVersion();
     }
 

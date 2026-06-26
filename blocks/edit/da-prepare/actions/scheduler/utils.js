@@ -1,5 +1,5 @@
 import { daFetch } from '../../../../shared/utils.js';
-import { getNx2Api } from '../../../../../scripts/utils.js';
+import { AEM_ORIGIN } from '../../../../shared/constants.js';
 
 const SNAPSHOT_SCHEDULER_URL = 'https://helix-snapshot-scheduler-prod.adobeaem.workers.dev';
 
@@ -14,8 +14,7 @@ export async function isRegistered(org, site) {
 
 export async function getUserPublishPermission(org, site, path) {
   try {
-    const { status } = await getNx2Api();
-    const resp = await status.get({ org, site, path });
+    const resp = await daFetch(`${AEM_ORIGIN}/status/${org}/${site}/main${path}`);
     if (!resp.ok) return false;
     const json = await resp.json();
     return json.live?.permissions?.includes('write') || false;

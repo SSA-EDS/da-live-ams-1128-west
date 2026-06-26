@@ -6,5 +6,6 @@ test('Get Main Page', async ({ page }) => {
   const html = await page.content();
 
   expect(html).toContain('Browse - DA');
-  await expect(page.locator('a.brand-area')).toBeVisible();
+  await expect(page.locator('a.nx-nav-brand')).toBeVisible();
+  await expect(page.locator('a.nx-nav-brand')).toContainText('Author');
 });

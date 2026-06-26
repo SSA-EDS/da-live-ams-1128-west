@@ -1,11 +1,16 @@
 import { LitElement, html, repeat, nothing } from 'da-lit';
-import { isFavorite, toggleFavorite } from '../shared/favorites.js';
 import { getNx, getNx2Api, sanitizePathParts } from '../../../scripts/utils.js';
 
 import '../da-list-item/da-list-item.js';
 
 const { loadStyle } = await import(`${getNx()}/utils/utils.js`);
 const STYLE = await loadStyle(import.meta.url);
+const { default: getSvg } = await import(`${getNx()}/utils/svg.js`);
+const ICONS = [
+  '/blocks/edit/img/Smock_Cancel_18_N.svg',
+  '/blocks/edit/img/Smock_Checkmark_18_N.svg',
+  '/blocks/edit/img/Smock_Refresh_18_N.svg',
+];
 
 const MAX_DELETE_COUNT = 1000;
 const DELETE_CONFIRM_THRESHOLD = 10;
@@ -64,6 +69,7 @@ export default class DaList extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.adoptedStyleSheets = [STYLE];
+    getSvg({ parent: this.shadowRoot, paths: ICONS });
   }
 
   async update(props) {
@@ -71,8 +77,6 @@ export default class DaList extends LitElement {
     if (props.has('listItems') && this.listItems) {
       this._listItems = this.listItems;
       this.resetListItemPaths(this._listItems);
-      this.applyFavoritesToItems(this._listItems);
-      this.applyFavoriteOrder();
     }
 
     if (props.has('fullpath') && this.fullpath) {
@@ -112,25 +116,6 @@ export default class DaList extends LitElement {
     this.dispatchEvent(event);
   }
 
-  applyFavoritesToItems(items) {
-    if (!items) return items;
-    items.forEach((item) => {
-      item.isFavorited = isFavorite(this.fullpath, item.path);
-    });
-    return items;
-  }
-
-  applyFavoriteOrder() {
-    if (!this._listItems) return;
-    const favorites = [];
-    const rest = [];
-    this._listItems.forEach((item) => {
-      if (item.isFavorited) favorites.push(item);
-      else rest.push(item);
-    });
-    this._listItems = [...favorites, ...rest];
-  }
-
   async getList() {
     try {
       this._continuationToken = null;
@@ -145,12 +130,8 @@ export default class DaList extends LitElement {
       this._continuationToken = continuationToken;
       this._allPagesLoaded = !continuationToken;
       this.resetListItemPaths(items);
-      this.applyFavoritesToItems(items);
-      const favorites = items.filter((i) => i.isFavorited);
-      const rest = items.filter((i) => !i.isFavorited);
-      const ordered = [...favorites, ...rest];
       this.scheduleAutoCheck();
-      return ordered;
+      return items;
     } catch {
       this._emptyMessage = 'Not permitted';
       this.resetListItemPaths([]);
@@ -187,11 +168,7 @@ export default class DaList extends LitElement {
         this._listItemPaths,
       );
       const uniqueAdded = mergedItems.length - existingItems.length;
-      if (uniqueAdded) {
-        this.applyFavoritesToItems(mergedItems);
-        this._listItems = mergedItems;
-        this.applyFavoriteOrder();
-      }
+      if (uniqueAdded) this._listItems = mergedItems;
 
       if (!nextToken) {
         this._continuationToken = null;
@@ -228,14 +205,10 @@ export default class DaList extends LitElement {
   }
 
   handleNewItem() {
-    if (this.newItem?.path) {
-      if (this._listItemPaths.has(this.newItem.path)) {
-        this.newItem = null;
-        return;
-      }
-      this._listItemPaths.add(this.newItem.path);
-    }
+    // Add it to internal list
+    if (this.newItem?.path) this._listItemPaths.add(this.newItem.path);
     this._listItems.unshift(this.newItem);
+    // Clear the public item
     this.newItem = null;
   }
 
@@ -275,19 +248,7 @@ export default class DaList extends LitElement {
     }
 
     this.actionBar.items = this._selectedItems;
-    this.actionBar.isFavorite = this._selectedItems.length === 1
-      ? !!this._selectedItems[0].isFavorited
-      : false;
     this.requestUpdate();
-  }
-
-  handleFavorite() {
-    const item = this._selectedItems?.[0];
-    if (!item) return;
-    const nowFavorite = toggleFavorite(this.fullpath, item.path);
-    item.isFavorited = nowFavorite;
-    this.applyFavoriteOrder();
-    this.handleClear();
   }
 
   handleItemChecked(e, item, index) {
@@ -484,12 +445,10 @@ export default class DaList extends LitElement {
 
       if (this._unpublish && this._confirmText === 'YES') {
         const { aem } = await getNx2Api();
-        // AEM resolves HTML pages by their extensionless path
-        const aemPath = item.ext === 'html' ? item.path.slice(0, -5) : item.path;
-        const previewResp = await aem.unPreview(aemPath);
+        const previewResp = await aem.unPreview(item.path);
         if (!previewResp.ok) this._itemErrors.push({ ...item, message: 'Couldn\'t unpublish preview' });
 
-        const liveResp = await aem.unPublish(aemPath);
+        const liveResp = await aem.unPublish(item.path);
         if (!liveResp.ok) this._itemErrors.push({ ...item, message: 'Couldn\'t unpublish production' });
       }
       this._itemsRemaining -= 1;
@@ -610,7 +569,7 @@ export default class DaList extends LitElement {
       }
     }
 
-    this.filteredItems.forEach((item) => { item.isChecked = check; });
+    this._listItems.forEach((item) => { item.isChecked = check; });
     this.handleSelectionState();
   }
 
@@ -632,7 +591,6 @@ export default class DaList extends LitElement {
 
     const sortFn = this.getSortFn(first, last, prop);
     this._listItems.sort(sortFn);
-    this.applyFavoriteOrder();
     this.requestUpdate();
   }
 
@@ -694,17 +652,9 @@ export default class DaList extends LitElement {
     this._filter = e.target.value;
   }
 
-  get filteredItems() {
-    const items = this._listItems.filter((item) => item.name !== '.trash');
-    return this._filter
-      ? items.filter((item) => item.name.includes(this._filter))
-      : items;
-  }
-
   get isSelectAll() {
-    const items = this.filteredItems;
-    const selectCount = items.filter((item) => item.isChecked).length;
-    return selectCount === items.length && items.length !== 0;
+    const selectCount = this._listItems.filter((item) => item.isChecked).length;
+    return selectCount === this._listItems.length && this._listItems.length !== 0;
   }
 
   get actionBar() {
@@ -734,10 +684,10 @@ export default class DaList extends LitElement {
           placeholder="YES"
           autofocus=""
           @input=${(e) => {
-        const upper = e.target.value.toUpperCase();
-        if (e.target.value !== upper) e.target.value = upper;
-        this._confirmText = upper;
-      }}
+            const upper = e.target.value.toUpperCase();
+            if (e.target.value !== upper) e.target.value = upper;
+            this._confirmText = upper;
+          }}
           aria-label="Type YES to confirm"
           value=${this._confirmText ?? ''}></sl-input>
       </div>
@@ -911,7 +861,6 @@ export default class DaList extends LitElement {
           @renamecompleted=${(e) => this.handleRenameCompleted(e)}
           allowselect="${this.select ? true : nothing}"
           ischecked="${item.isChecked ? true : nothing}"
-          isfavorited="${item.isFavorited ? true : nothing}"
           rename="${item.rename ? true : nothing}"
           name="${item.name}"
           path="${item.path}"
@@ -932,9 +881,11 @@ export default class DaList extends LitElement {
 
   renderCheckBox() {
     return html`
-      <label class="checkbox-label ${this._bulkLoading ? 'loading' : ''}" role="columnheader">
+      <div class="checkbox-wrapper ${this._bulkLoading ? 'loading' : ''}" role="columnheader">
         <input type="checkbox" id="select-all" name="select-all" .checked="${this.isSelectAll}" @click="${this.handleCheckAll}" aria-label="Select all items" ?disabled=${this._bulkLoading} aria-disabled=${this._bulkLoading ? 'true' : 'false'}>
-      </label>
+        <label class="checkbox-label" for="select-all"></label>
+      </div>
+      <input type="checkbox" name="select" style="display: none;">
     `;
   }
 
@@ -945,7 +896,9 @@ export default class DaList extends LitElement {
 
   render() {
     const hasMorePages = this._continuationToken && !this._allPagesLoaded;
-    const { filteredItems } = this;
+    const filteredItems = this._filter
+      ? this._listItems.filter((item) => item.name.includes(this._filter))
+      : this._listItems;
     const showList = filteredItems?.length > 0 || hasMorePages;
 
     return html`
@@ -962,7 +915,7 @@ export default class DaList extends LitElement {
                 ?disabled=${this._filterLoading}
                 aria-disabled=${this._filterLoading ? 'true' : 'false'}
                 aria-label="Toggle filter">
-                <svg viewBox="0 0 20 20"><use href="/img/icons/s2-icon-filter-20-n.svg#icon"></svg>
+                <img class="toggle-icon-dark" width="20" src="/blocks/browse/da-browse/img/Filter20.svg" alt="" />
               </button>
             ` : html`
               <button
@@ -972,7 +925,7 @@ export default class DaList extends LitElement {
                 ?disabled=${this._filterLoading}
                 aria-disabled=${this._filterLoading ? 'true' : 'false'}
                 aria-label="Toggle filter">
-                <svg viewBox="0 0 20 20"><use href="/img/icons/s2-icon-filter-20-n.svg#icon"></svg>
+                <img class="toggle-icon-dark" width="20" src="/blocks/browse/da-browse/img/Filter20.svg" alt="" />
               </button>
             `}
           </div>
@@ -1005,7 +958,6 @@ export default class DaList extends LitElement {
         .permissions=${this._permissions}
         @clearselection=${this.handleClear}
         @rename=${this.handleRename}
-        @onfavorite=${this.handleFavorite}
         @onpaste=${this.handlePaste}
         @ondelete=${this.handleDelete}
         @onshare=${this.handleShare}

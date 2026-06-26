@@ -1,6 +1,6 @@
 import { LitElement, html, nothing } from 'da-lit';
-import { formatDate } from '../utils.js';
-import { getNx2Api } from '../../../scripts/utils.js';
+import { DA_ORIGIN } from '../constants.js';
+import { daFetch, formatDate } from '../utils.js';
 import { formatVersions } from './helpers.js';
 
 export default class DaVersionsBase extends LitElement {
@@ -16,8 +16,7 @@ export default class DaVersionsBase extends LitElement {
     if (!this.path) return;
     this._loading = true;
     this._versions = null;
-    const { versions } = await getNx2Api();
-    const resp = await versions.list(this.path);
+    const resp = await daFetch(`${DA_ORIGIN}/versionlist${this.path}`);
     if (!resp.ok) {
       this._loading = false;
       return;
@@ -36,21 +35,13 @@ export default class DaVersionsBase extends LitElement {
     this.dispatchEvent(new CustomEvent('close', opts));
   }
 
-  handlePreview(e, entry) {
+  async handlePreview(e, entry) {
     e.stopPropagation();
     const entryEl = e.target.closest('.da-version-entry');
     if (!entryEl.classList.contains('is-open')) {
       entryEl.classList.toggle('is-open');
     }
-    // A version is always a version of the open doc, so restore only needs the
-    // version id — org/site/path come from the doc on the consumer side, which
-    // lets the fetch go through api.js's versions.get for both backends. hlx5's
-    // id is the /versionsource tail; hlx6's is the entry's ULID.
-    const [, org, site] = this.path.split('/');
-    const versionId = entry.url
-      ? entry.url.replace(`/versionsource/${org}/${site}/`, '')
-      : entry.versionId;
-    const detail = { versionId, label: entry.label, date: entry.date };
+    const detail = { url: `${DA_ORIGIN}${entry.url}`, label: entry.label, date: entry.date };
     this.dispatchEvent(new CustomEvent('preview', { detail, bubbles: true, composed: true }));
   }
 
@@ -63,8 +54,10 @@ export default class DaVersionsBase extends LitElement {
     const entry = { ...this._newVersion };
     if (e.target.elements.label?.value) entry.label = e.target.elements.label.value;
 
-    const { versions } = await getNx2Api();
-    const res = await versions.create(this.path, entry.label ? { comment: entry.label } : {});
+    const opts = { method: 'POST' };
+    if (entry.label) opts.body = JSON.stringify({ label: entry.label });
+
+    const res = await daFetch(`${DA_ORIGIN}/versionsource${this.path}`, opts);
     if (res.status !== 201) return;
 
     this._newVersion = null;
