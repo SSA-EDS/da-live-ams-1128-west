@@ -11,10 +11,9 @@
  */
 import { test, expect } from '@playwright/test';
 import ENV from '../../utils/env.js';
-import { getQuery, TEST_SITE } from '../../utils/page.js';
+import { getQuery } from '../../utils/page.js';
 
 test('Read-only document directly configured', async ({ page }, workerInfo) => {
-  test.skip(TEST_SITE !== 'da-status', 'ACLs are not yet supported for Helix 6');
   const url = `${ENV}/edit${getQuery()}#/da-testautomation/acltest/testdocs/readonly-doc`;
 
   await page.goto(url);
@@ -39,7 +38,6 @@ test('Read-only document directly configured', async ({ page }, workerInfo) => {
 });
 
 test('Read-only document indirectly configured', async ({ page }, workerInfo) => {
-  test.skip(TEST_SITE !== 'da-status', 'ACLs are not yet supported for Helix 6');
   const url = `${ENV}/edit${getQuery()}#/da-testautomation/acltest/testdocs/subdir/onlyread-doc`;
 
   await page.goto(url);
@@ -64,7 +62,6 @@ test('Read-only document indirectly configured', async ({ page }, workerInfo) =>
 });
 
 test('Read-write document', async ({ page }, workerInfo) => {
-  test.skip(TEST_SITE !== 'da-status', 'ACLs are not yet supported for Helix 6');
   const url = `${ENV}/edit${getQuery()}#/da-testautomation/acltest/testdocs/readwrite-doc`;
 
   await page.goto(url);
@@ -85,7 +82,6 @@ test('Read-write document', async ({ page }, workerInfo) => {
 });
 
 test('No access at all', async ({ page }) => {
-  test.skip(TEST_SITE !== 'da-status', 'ACLs are not yet supported for Helix 6');
   const url = `${ENV}/edit${getQuery()}#/da-testautomation/acltest/testdocs/noaccess-doc`;
 
   await page.goto(url);

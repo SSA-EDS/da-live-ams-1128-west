@@ -16,6 +16,7 @@
 .list-wrap {
   flex: 1;
   overflow-y: auto;
+  padding: var(--s2-spacing-75) 0;
 }
 
 .outline-list {
@@ -27,14 +28,15 @@
 .outline-section {
   margin: 0;
   padding: 0;
+  border-bottom: 1px solid var(--s2-gray-200);
+
+  &:last-child:not([data-drop-position="after"]) {
+    border-bottom: none;
+  }
 }
 
 .section-header {
-  display: flex;
-  align-items: center;
-  padding-inline-end: var(--s2-spacing-100);
   background: var(--s2-gray-75);
-  border-bottom: 1px solid var(--s2-gray-200);
   cursor: grab;
 
   &:active {
@@ -43,15 +45,11 @@
 }
 
 .section-label {
-  flex: 1;
   display: block;
-  padding: var(--s2-spacing-75) var(--s2-spacing-100);
+  padding: var(--s2-spacing-200) var(--s2-spacing-100);
   font-size: var(--s2-body-size-s);
   font-weight: 600;
   color: var(--s2-gray-800);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .block-list {
@@ -61,8 +59,7 @@
 }
 
 .block-item {
-  display: flex;
-  align-items: center;
+  display: block;
   padding: var(--s2-spacing-75) var(--s2-spacing-100);
   padding-inline-start: var(--s2-spacing-300);
   cursor: grab;
@@ -71,7 +68,10 @@
   color: var(--s2-gray-800);
   min-height: 32px;
   box-sizing: border-box;
-  border-bottom: 1px solid var(--s2-gray-200);
+  border-bottom: 1px solid var(--s2-gray-100);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &:hover {
     background: var(--s2-gray-75);
@@ -79,6 +79,10 @@
 
   &:focus-visible {
     background: var(--s2-gray-75);
+  }
+
+  &:last-child:not([data-drop-position="after"]) {
+    border-bottom: none;
   }
 
   &[aria-selected="true"] {
@@ -114,46 +118,6 @@
   font-style: italic;
   color: var(--s2-gray-600);
   font-weight: 400;
-}
-
-.block-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.action-btn {
-  display: inline-flex;
-  visibility: hidden;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  margin-inline-start: var(--s2-spacing-50);
-  padding: 0;
-  border: none;
-  border-radius: var(--s2-corner-radius-75);
-  background: transparent;
-  color: var(--s2-gray-800);
-  cursor: pointer;
-
-  svg.icon {
-    display: block;
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover {
-    background: var(--s2-gray-200);
-  }
-}
-
-.action-btn:focus-visible,
-.section-header:hover .action-btn,
-.block-item:hover .action-btn {
-  visibility: visible;
 }
 
 .placeholder {

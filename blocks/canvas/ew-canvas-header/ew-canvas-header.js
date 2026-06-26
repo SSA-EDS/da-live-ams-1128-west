@@ -1,8 +1,8 @@
-import { LitElement, html, nothing } from 'da-lit';
+import { LitElement, html } from 'da-lit';
 
-import { getNx, getNxEWFlags } from '../../../scripts/utils.js';
+import { getNx } from '../../../scripts/utils.js';
 
-const { loadStyle, hashChange } = await import(`${getNx()}/utils/utils.js`);
+const { loadStyle } = await import(`${getNx()}/utils/utils.js`);
 
 const style = await loadStyle(import.meta.url);
 
@@ -22,8 +22,6 @@ class EWCanvasHeader extends LitElement {
     editorView: { type: String, reflect: true },
     undoAvailable: { type: Boolean },
     redoAvailable: { type: Boolean },
-    authorized: { type: Boolean },
-    _chatDisabled: { state: true },
   };
 
   constructor() {
@@ -31,33 +29,11 @@ class EWCanvasHeader extends LitElement {
     this.editorView = 'layout';
     this.undoAvailable = false;
     this.redoAvailable = false;
-    this.authorized = true;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.adoptedStyleSheets = [style];
-    this._unsubHash = hashChange.subscribe((state) => {
-      this._syncChatDisabled(state?.org, state?.site);
-    });
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this._unsubHash?.();
-  }
-
-  async _syncChatDisabled(org, site) {
-    const key = org && site ? `${org}/${site}` : '';
-    this._chatDisableKey = key;
-    if (!org || !site) {
-      this._chatDisabled = false;
-      return;
-    }
-    const { isEwChatDisabled } = await getNxEWFlags();
-    const disabled = await isEwChatDisabled({ org, site });
-    if (this._chatDisableKey !== key) return;
-    this._chatDisabled = disabled;
   }
 
   _openPanel(position) {
@@ -102,11 +78,9 @@ class EWCanvasHeader extends LitElement {
     return html`
       <header class="bar" part="bar">
         <div class="group group-start" part="group-start">
-          ${this._chatDisabled ? nothing : html`
           <button type="button" class="icon-btn" part="btn toggle-before" data-action="open-panel-before" aria-label="Open before panel" @click=${() => this._openPanel('before')}>
             ${this._renderIcon('splitLeft')}
           </button>
-          `}
           <button type="button" class="icon-btn" part="btn" data-action="undo" aria-label="Undo" ?disabled=${!this.undoAvailable} @click=${this._undo}>
             ${this._renderIcon('undo')}
           </button>
@@ -124,7 +98,6 @@ class EWCanvasHeader extends LitElement {
         </div>
 
         <div class="group group-center" part="group-center">
-          ${this.authorized ? html`
           <div class="segmented" role="group" aria-label="Editor view" part="editor-view-toggle">
             <button
               type="button"
@@ -147,7 +120,6 @@ class EWCanvasHeader extends LitElement {
               @click=${() => this._setEditorView('split')}
             >${this._renderIcon('gridCompare')}</button>
           </div>
-          ` : nothing}
         </div>
 
         <div class="group group-end" part="group-end">

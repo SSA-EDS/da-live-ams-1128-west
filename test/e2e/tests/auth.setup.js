@@ -93,9 +93,9 @@ setup('Set up authentication', async ({ page }) => {
   await foundationInternal.waitFor();
   await foundationInternal.click();
 
-  const authorLink = page.locator('a.brand-area');
+  const authorLink = page.locator('a.nx-nav-brand');
   await authorLink.waitFor();
-  await expect(authorLink).toBeVisible();
+  await expect(authorLink).toContainText('Author');
 
   await page.context().storageState({ path: AUTH_FILE });
 });

@@ -13,7 +13,7 @@ import { getNx } from '../../../scripts/utils.js';
  */
 export async function setupIframeChannel({ iframe, hashState, getView, onClose }) {
   const { org, site, path, view } = hashState;
-  if (!org || !site || !iframe.contentWindow) return { channel: null, destroy() { } };
+  if (!org || !site || !iframe.contentWindow) return { channel: null, destroy() {} };
 
   const channel = new MessageChannel();
 
@@ -41,14 +41,10 @@ export async function setupIframeChannel({ iframe, hashState, getView, onClose }
       onClose();
     }
 
-    if (action === 'showPanel') {
-      document.dispatchEvent(new CustomEvent('nx-show-panel', { detail: { panelName: details } }));
-    }
-
     if (action === 'setPrompt') {
       const text = typeof details === 'string' ? details : details.text;
       const autoSend = typeof details === 'object' && details.autoSend;
-      document.dispatchEvent(new CustomEvent('nx-open-chat-panel', { detail: { text, autoSend } }));
+      document.dispatchEvent(new CustomEvent('nx-set-prompt', { detail: { text, autoSend } }));
     }
 
     if (action === 'getSelection') {

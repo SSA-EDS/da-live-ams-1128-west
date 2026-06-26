@@ -83,21 +83,20 @@ export function getPermissions() {
   return permissions;
 }
 
-// Takes a pathDetails object ({ org, site, path, view }). For a version restore,
-// pass the same doc details plus a `versionId` and it routes through versions.get.
-export async function getData(input) {
+export async function getData(url) {
   const { config, source, versions } = await getNx2Api();
-  const { org, site, path, view, versionId } = input;
+  const { pathname } = new URL(url);
+
+  const [api, org, site, ...parts] = pathname.slice(1).split('/');
+  let getFn = source.get;
+  if (api === 'config') getFn = config.get;
 
   let resp;
-  let isVersion = false;
-  if (versionId) {
-    isVersion = true;
-    resp = await versions.get({ org, site, path, versionId });
-  } else if (view === 'config') {
-    resp = await config.get({ org, site });
+  if (api === 'versionsource') {
+    getFn = versions.get;
+    resp = await getFn({ org, site, versionId: parts.join('/') });
   } else {
-    resp = await source.get({ org, site, path });
+    resp = await getFn({ org, site, path: parts.join('/') });
   }
 
   // Set permissions even if the file is a 404
@@ -114,7 +113,7 @@ export async function getData(input) {
   // Get base data
   const json = await resp.json();
 
-  if (!isVersion) {
+  if (!url.includes('/versionsource')) {
     staleCheck.markSynced(json);
     const sheetPanes = document.querySelector('da-sheet-panes');
     if (sheetPanes) sheetPanes.data = json;
@@ -144,7 +143,7 @@ export async function getData(input) {
 }
 
 export default async function init(el, data) {
-  const suppliedData = data || await getData(el.details);
+  const suppliedData = data || await getData(el.details.sourceUrl);
 
   await loadStyle('/deps/jspreadsheet-ce/dist/jspreadsheet.css');
   await loadScript('/deps/jspreadsheet-ce/dist/index.js');

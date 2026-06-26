@@ -1,13 +1,7 @@
 export class Queue {
-  constructor(callback) {
-    this.callback = callback;
-    this.items = [];
-  }
+  constructor() { this.items = []; }
 
-  push(item) {
-    this.items.push(item);
-    return this.callback ? this.callback(item) : undefined;
-  }
+  push(item) { this.items.push(item); }
 
   shift() { return this.items.shift(); }
 }

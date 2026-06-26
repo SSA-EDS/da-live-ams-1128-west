@@ -1,9 +1,11 @@
-import { fetchDaConfigs, getFirstSheet } from '../../../shared/utils.js';
+import { DA_ORIGIN } from '../../../shared/constants.js';
+import { daFetch } from '../../../shared/utils.js';
 
-async function getConfSheet(org, site) {
-  const configs = await Promise.all(fetchDaConfigs({ org, site }));
-  const rows = configs.filter(Boolean).reverse().flatMap((c) => getFirstSheet(c) || []);
-  return rows.length ? rows : null;
+async function getConfSheet(org) {
+  const resp = await daFetch(`${DA_ORIGIN}/config/${org}/`);
+  if (!resp.ok) return null;
+  const json = await resp.json();
+  return json?.data?.data || json?.data;
 }
 
 export async function getUeUrl(ueConf, previewUrl) {
@@ -27,7 +29,7 @@ export async function getQeUrl(previewUrl) {
 }
 
 export default async function getExternalUrl(org, repo, previewUrl) {
-  const confSheet = await getConfSheet(org, repo);
+  const confSheet = await getConfSheet(org);
   const qeConf = confSheet?.find((row) => row.key === 'quick-edit' && row.value.split(',').find((split) => split.startsWith(repo)));
   if (qeConf) return getQeUrl(previewUrl);
   const ueConf = confSheet?.find((row) => row.key === 'editor.path');

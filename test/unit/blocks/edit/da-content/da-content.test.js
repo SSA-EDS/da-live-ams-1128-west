@@ -34,17 +34,17 @@ describe('da-content', () => {
     expect(ed._showPane).to.equal('versions');
   });
 
-  it('handleVersionReset clears _versionId', () => {
+  it('handleVersionReset clears _versionUrl', () => {
     const ed = new DaContent();
-    ed._versionId = 'v1';
+    ed._versionUrl = 'https://x';
     ed.handleVersionReset();
-    expect(ed._versionId).to.equal(null);
+    expect(ed._versionUrl).to.equal(null);
   });
 
-  it('handleVersionPreview sets _versionId from detail', () => {
+  it('handleVersionPreview sets _versionUrl from detail', () => {
     const ed = new DaContent();
-    ed.handleVersionPreview({ detail: { versionId: 'v1' } });
-    expect(ed._versionId).to.equal('v1');
+    ed.handleVersionPreview({ detail: { url: 'https://prev' } });
+    expect(ed._versionUrl).to.equal('https://prev');
   });
 
   it('loadViews short-circuits after the first call', async () => {
