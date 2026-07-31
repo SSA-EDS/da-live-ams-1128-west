@@ -12,8 +12,8 @@
 import { TEST_SITE } from './env.js';
 import { getTestResourceAge } from './page.js';
 
-const DA_ADMIN = 'https://admin.da.live';
-const AEM_API = 'https://api.aem.live';
+const DA_ADMIN = 'https://admin.ent-da.live';
+const AEM_API = 'https://api.ent-aem.live';
 
 // Same discriminator the rest of the suite already uses
 // (test.skip(TEST_SITE !== 'da-status', ...)).

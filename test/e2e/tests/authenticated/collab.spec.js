@@ -110,9 +110,9 @@ test('Collab cursors in multiple editors', async ({ browser, page, browserName, 
   const [, org, site, ...rest] = pageURL.split('#')[1].split('/');
   let sourceUrl;
   if (TEST_SITE === 'da-status') {
-    sourceUrl = `https://admin.da.live/source/${org}/${site}/${rest.join('/')}.html`;
+    sourceUrl = `https://admin.ent-da.live/source/${org}/${site}/${rest.join('/')}.html`;
   } else {
-    sourceUrl = `https://api.aem.live/${org}/sites/${site}/source/${rest.join('/')}.html`;
+    sourceUrl = `https://api.ent-aem.live/${org}/sites/${site}/source/${rest.join('/')}.html`;
   }
 
   console.log('Checking backend at', sourceUrl);

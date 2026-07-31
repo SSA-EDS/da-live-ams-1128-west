@@ -29,7 +29,7 @@ describe('Ew panel library _insertTemplate', () => {
     };
 
     const el = document.createElement('ew-panel-library');
-    await el._insertTemplate({ key: 'home', value: 'https://content.da.live/org/site/home' });
+    await el._insertTemplate({ key: 'home', value: 'https://content.ent-da.live/org/site/home' });
 
     expect(fetched).to.be.false;
   });
@@ -43,8 +43,8 @@ describe('Ew panel library _insertTemplate', () => {
     };
 
     const el = document.createElement('ew-panel-library');
-    await el._insertTemplate({ key: 'home', value: 'https://content.da.live/org/site/home' });
+    await el._insertTemplate({ key: 'home', value: 'https://content.ent-da.live/org/site/home' });
 
-    expect(fetchedUrl).to.equal('https://content.da.live/org/site/home');
+    expect(fetchedUrl).to.equal('https://content.ent-da.live/org/site/home');
   });
 });

@@ -286,7 +286,7 @@ export function getItemDetails(item) {
   const { hostname, pathname } = url;
 
   // AEM Flavor
-  if (hostname.includes('.aem.')) {
+  if (hostname.includes('.ent-aem.')) {
     const [org, site] = hostname.split('.')[0].split('--').reverse();
     return { org, site, pathname };
   }

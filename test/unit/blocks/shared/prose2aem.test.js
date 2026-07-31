@@ -397,7 +397,7 @@ describe('prose2aem same-site URL conversion', () => {
   it('converts same-site URLs to relative when livePreview=true', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/fragments/tabs-homepage">Fragment</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/fragments/tabs-homepage">Fragment</a></p>
     `);
 
     prose2aem(editor, true, false);
@@ -409,19 +409,19 @@ describe('prose2aem same-site URL conversion', () => {
   it('does not convert URLs when livePreview=false', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/fragments/tabs-homepage">Fragment</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/fragments/tabs-homepage">Fragment</a></p>
     `);
 
     prose2aem(editor, false, false);
     const link = editor.querySelector('a');
 
-    expect(link.getAttribute('href')).to.equal('https://main--repo--org.aem.live/fragments/tabs-homepage');
+    expect(link.getAttribute('href')).to.equal('https://main--repo--org.ent-aem.live/fragments/tabs-homepage');
   });
 
   it('converts same-site URLs with nested paths', () => {
     window.location.hash = '#/org/site/path';
     const editor = makeEditor(`
-      <p><a href="https://main--site--org.aem.live/en/fragments/footer">Fragment</a></p>
+      <p><a href="https://main--site--org.ent-aem.live/en/fragments/footer">Fragment</a></p>
     `);
 
     prose2aem(editor, true, false);
@@ -433,7 +433,7 @@ describe('prose2aem same-site URL conversion', () => {
   it('preserves search params and hash in converted URLs', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/fragments/tabs?param=value#section">Fragment</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/fragments/tabs?param=value#section">Fragment</a></p>
     `);
 
     prose2aem(editor, true, false);
@@ -445,7 +445,7 @@ describe('prose2aem same-site URL conversion', () => {
   it('converts same-site non-fragment URLs to relative', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/products/page">Regular page</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/products/page">Regular page</a></p>
     `);
 
     prose2aem(editor, true, false);
@@ -457,13 +457,13 @@ describe('prose2aem same-site URL conversion', () => {
   it('does not convert cross-site URLs', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--otherrepo--otherorg.aem.live/fragments/something">Different site</a></p>
+      <p><a href="https://main--otherrepo--otherorg.ent-aem.live/fragments/something">Different site</a></p>
     `);
 
     prose2aem(editor, true, false);
     const link = editor.querySelector('a');
 
-    expect(link.getAttribute('href')).to.equal('https://main--otherrepo--otherorg.aem.live/fragments/something');
+    expect(link.getAttribute('href')).to.equal('https://main--otherrepo--otherorg.ent-aem.live/fragments/something');
   });
 
   it('does not convert non-EDS URLs', () => {
@@ -478,11 +478,11 @@ describe('prose2aem same-site URL conversion', () => {
     expect(link.getAttribute('href')).to.equal('https://example.com/fragments/something');
   });
 
-  it('converts both .aem.live and .aem.page same-site URLs', () => {
+  it('converts both .ent-aem.live and .ent-aem.page same-site URLs', () => {
     window.location.hash = '#/org/repo/path';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/fragments/hero">Fragment 1</a></p>
-      <p><a href="https://main--repo--org.aem.page/fragments/footer">Fragment 2</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/fragments/hero">Fragment 1</a></p>
+      <p><a href="https://main--repo--org.ent-aem.page/fragments/footer">Fragment 2</a></p>
     `);
 
     prose2aem(editor, true, false);
@@ -518,12 +518,12 @@ describe('prose2aem same-site URL conversion', () => {
   it('does not convert when org/site not in hash', () => {
     window.location.hash = '';
     const editor = makeEditor(`
-      <p><a href="https://main--repo--org.aem.live/fragments/tabs">Fragment</a></p>
+      <p><a href="https://main--repo--org.ent-aem.live/fragments/tabs">Fragment</a></p>
     `);
 
     prose2aem(editor, true, false);
     const link = editor.querySelector('a');
 
-    expect(link.getAttribute('href')).to.equal('https://main--repo--org.aem.live/fragments/tabs');
+    expect(link.getAttribute('href')).to.equal('https://main--repo--org.ent-aem.live/fragments/tabs');
   });
 });

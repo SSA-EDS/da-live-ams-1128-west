@@ -122,7 +122,7 @@ describe('DaNew', () => {
       }
 
       expect(fetchCalls).to.have.length(1);
-      expect(fetchCalls[0].url).to.equal('https://admin.da.live/source/org/repo/my-doc.html');
+      expect(fetchCalls[0].url).to.equal('https://admin.ent-da.live/source/org/repo/my-doc.html');
       expect(fetchCalls[0].method).to.equal('POST');
       expect(fetchCalls[0].bodyText).to.equal(
         '<body><header></header><main><div></div></main><footer></footer></body>',
@@ -153,7 +153,7 @@ describe('DaNew', () => {
 
       expect(fetchCalls).to.have.length(1);
       // createFolder appends a trailing slash to signal directory creation
-      expect(fetchCalls[0].url).to.equal('https://admin.da.live/source/org/repo/my-folder/');
+      expect(fetchCalls[0].url).to.equal('https://admin.ent-da.live/source/org/repo/my-folder/');
       expect(fetchCalls[0].method).to.equal('POST');
       expect(sendEvents[0].name).to.equal('my-folder');
       expect(sendEvents[0].path).to.equal('/org/repo/my-folder');
@@ -186,7 +186,7 @@ describe('DaNew', () => {
       }
 
       expect(fetchCalls).to.have.length(1);
-      expect(fetchCalls[0].url).to.equal('https://admin.da.live/source/org/repo/my-sheet.json');
+      expect(fetchCalls[0].url).to.equal('https://admin.ent-da.live/source/org/repo/my-sheet.json');
       expect(fetchCalls[0].method).to.equal('POST');
       const saved = JSON.parse(fetchCalls[0].bodyText);
       expect(saved[':type']).to.equal('sheet');

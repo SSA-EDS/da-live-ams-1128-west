@@ -11,7 +11,7 @@ const DA_ORIGINS = [
   'http://localhost:8787'];
 
 const AEM_ORIGINS = ['https://admin.ent-aem.page', 'https://admin.ent-aem.live'];
-const ETC_ORIGINS = ['https://stage-content.da.live', 'https://helix-snapshot-scheduler-ci.adobeaem.workers.dev', 'https://helix-snapshot-scheduler-prod.adobeaem.workers.dev'];
+const ETC_ORIGINS = ['https://stage-content.ent-da.live', 'https://helix-snapshot-scheduler-ci.adobeaem.workers.dev', 'https://helix-snapshot-scheduler-prod.adobeaem.workers.dev'];
 const ALLOWED_TOKEN = [...DA_ORIGINS, ...AEM_ORIGINS, ...ETC_ORIGINS];
 
 let imsDetails;

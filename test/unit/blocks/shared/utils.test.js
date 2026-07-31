@@ -815,7 +815,7 @@ describe('saveToDa — malformed path guard', () => {
       return Promise.resolve(new Response('ok', { status: 200 }));
     };
 
-    const result = await saveToDa({ path: 'https://da.live' });
+    const result = await saveToDa({ path: 'https://ent-da.live' });
     expect(result).to.equal(undefined);
     expect(fetchCalled).to.be.false;
   });

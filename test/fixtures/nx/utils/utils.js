@@ -6,7 +6,7 @@ export const loadStyle = async () => {
 
 export const loadScript = async () => {};
 
-export const DA_ADMIN = 'https://admin.da.live';
+export const DA_ADMIN = 'https://admin.ent-da.live';
 
 let _hashState = {};
 const _hashSubscribers = new Set();

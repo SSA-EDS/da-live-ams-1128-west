@@ -14,10 +14,10 @@ before(async () => {
 });
 
 const PATH = '/testorg/testsite/doc.html';
-const PING_URL = 'https://admin.hlx.page/ping/testorg/testsite';
-const LIST_URL = 'https://admin.da.live/versionlist/testorg/testsite/doc.html';
-const CREATE_URL = 'https://admin.da.live/versionsource/testorg/testsite/doc.html';
-const GET_URL = 'https://admin.da.live/versionsource/testorg/testsite/v1';
+const PING_URL = 'https://admin.ent-aem.page/ping/testorg/testsite';
+const LIST_URL = 'https://admin.ent-da.live/versionlist/testorg/testsite/doc.html';
+const CREATE_URL = 'https://admin.ent-da.live/versionsource/testorg/testsite/doc.html';
+const GET_URL = 'https://admin.ent-da.live/versionsource/testorg/testsite/v1';
 
 // Routes the fixture nx2 api.js's real fetch calls: the hlx6 upgrade-probe
 // ping (always answered as "not upgraded", routing to the legacy endpoints

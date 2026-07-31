@@ -36,7 +36,7 @@ export async function getAemHrefs({ path }) {
 
   if (snapshot) {
     const snapPath = `/${parts.join('/')}`;
-    hrefs.review = new URL(snapPath, `https://${snapshot}--main--${site}--${org}.aem.reviews`);
+    hrefs.review = new URL(snapPath, `https://${snapshot}--main--${site}--${org}.ent-aem.reviews`);
   }
 
   return hrefs;

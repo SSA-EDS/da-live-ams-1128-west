@@ -47,7 +47,7 @@ test.describe('da-media — image', () => {
   test('img src points to the content URL of the asset', async ({ page }) => {
     const img = page.locator('da-media img');
     const src = await img.getAttribute('src');
-    expect(src).toContain('https://content.da.live/da-testautomation/acltest/media/image.jpg');
+    expect(src).toContain('https://content.ent-da.live/da-testautomation/acltest/media/image.jpg');
   });
 
   test('sets the document title to include the filename', async ({ page }) => {
@@ -84,7 +84,7 @@ test.describe('da-media — video (mp4)', () => {
   test('video source src points to the content URL', async ({ page }) => {
     const source = page.locator('da-media video source');
     const src = await source.getAttribute('src');
-    expect(src).toContain('https://content.da.live/da-testautomation/acltest/media/big-buck-bunny.mp4');
+    expect(src).toContain('https://content.ent-da.live/da-testautomation/acltest/media/big-buck-bunny.mp4');
   });
 
   test('sets the document title to include the mp4 filename', async ({ page }) => {
