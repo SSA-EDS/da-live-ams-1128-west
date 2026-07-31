@@ -1,10 +1,11 @@
-import { getNx, nxJS } from '../../../scripts/utils.js';
+import { getNx } from '../../../scripts/utils.js';
 import getPathDetails from '../../shared/pathDetails.js';
 import { getRepositoryConfig, getResponsiveImageConfig } from './helpers/config.js';
 import {
   buildAuthorUrl, buildDmUrl, buildDeliveryUrl,
   getAssetAlt, getDmApprovalStatus, getScene7PublishStatus,
 } from './helpers/urls.js';
+import { applySiteImageModifiers } from './helpers/imageModifiers.js';
 import { insertImage, insertLink, insertFragment, createImageNode, getBlockName } from './helpers/insert.js';
 import showSmartCropDialog from './helpers/smart-crop.js';
 
@@ -41,15 +42,20 @@ export function buildFeatureSet(isDmEnabled) {
 }
 
 export function resolveAssetUrl(asset, repoConfig) {
-  const { tierType, assetOrigin, assetBasePath, isDmEnabled, mimeRenditionOverrides } = repoConfig;
+  const {
+    tierType, assetOrigin, assetBasePath, isDmEnabled,
+    mimeRenditionOverrides, siteImageModifiers,
+  } = repoConfig;
   const renditionOptions = { mimeRenditionOverrides };
+  let url;
   if (tierType === 'delivery') {
-    return buildDeliveryUrl(asset, assetOrigin, assetBasePath, renditionOptions);
+    url = buildDeliveryUrl(asset, assetOrigin, assetBasePath, renditionOptions);
+  } else if (isDmEnabled) {
+    url = buildDmUrl(asset, assetOrigin, assetBasePath, renditionOptions);
+  } else {
+    url = buildAuthorUrl(asset, assetOrigin);
   }
-  if (isDmEnabled) {
-    return buildDmUrl(asset, assetOrigin, assetBasePath, renditionOptions);
-  }
-  return buildAuthorUrl(asset, assetOrigin);
+  return applySiteImageModifiers(url, siteImageModifiers);
 }
 
 function showErrorPanel(container, onBack, onCancel, message = DM_ERROR_MSG) {
@@ -140,7 +146,11 @@ export function buildHandleSelection(
         responsiveImageConfigPromise,
         onInsert: (srcs) => {
           closeAndReset();
-          const nodes = srcs.map((src) => createImageNode(view, src, alt));
+          const nodes = srcs.map((src) => createImageNode(
+            view,
+            applySiteImageModifiers(src, repoConfig.siteImageModifiers),
+            alt,
+          ));
           insertFragment(view, nodes);
         },
         onBack: resetToAssetPanel,
@@ -167,9 +177,17 @@ export function buildHandleSelection(
 }
 
 export async function openAssets() {
-  const { loadStyle } = await import(`${getNx()}${nxJS}`);
-  const { loadIms, handleSignIn } = await import(`${getNx()}/utils/ims.js`);
-  const loadScript = (await import(`${getNx()}/utils/script.js`)).default;
+  const nx = getNx();
+  const isNx2 = nx.endsWith('/nx2');
+  const { loadStyle } = await import(`${nx}/utils/utils.js`);
+  // TODO: remove the ternary and the nx v1 branch once nxver=2 is
+  // rolled out on the CDN. Kept for backward compat during the
+  // transition: nx v1 exposes loadScript at utils/script.js; nx2
+  // re-exports it from utils/utils.js.
+  const loadScript = isNx2
+    ? (await import(`${nx}/utils/utils.js`)).loadScript
+    : (await import(`${nx}/utils/script.js`)).default;
+  const { loadIms, handleSignIn } = await import(`${nx}/utils/ims.js`);
 
   const details = await loadIms();
   if (details.anonymous) handleSignIn();
@@ -185,7 +203,10 @@ export async function openAssets() {
     return;
   }
 
-  await loadStyle(import.meta.url.replace('.js', '.css'));
+  const assetSheet = await loadStyle(import.meta.url);
+  if (assetSheet && !document.adoptedStyleSheets.includes(assetSheet)) {
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, assetSheet];
+  }
   await loadScript(ASSET_SELECTOR_URL);
 
   dialog = document.createElement('dialog');

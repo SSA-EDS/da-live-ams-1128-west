@@ -145,12 +145,10 @@ describe('DaTitle', () => {
   describe('reset', () => {
     it('clears internal state', async () => {
       el = await fixture();
-      el._scheduled = 'something';
       el._configs = ['config'];
 
       el.reset();
 
-      expect(el._scheduled).to.be.undefined;
       expect(el._configs).to.be.undefined;
     });
   });
@@ -275,25 +273,15 @@ describe('DaTitle', () => {
     });
   });
 
-  describe('collab status (sheet view)', () => {
-    it('sets collabStatus to connected when online', async () => {
-      const origOnLine = window.navigator.onLine;
-      Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
-
-      el = await fixture({ details: createDetails({ view: 'sheet' }) });
-      expect(el.collabStatus).to.equal('connected');
-
-      Object.defineProperty(window.navigator, 'onLine', { value: origOnLine, configurable: true });
-    });
-
-    it('sets collabStatus to offline when offline', async () => {
-      const origOnLine = window.navigator.onLine;
-      Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
-
-      el = await fixture({ details: createDetails({ view: 'sheet' }) });
-      expect(el.collabStatus).to.equal('offline');
-
-      Object.defineProperty(window.navigator, 'onLine', { value: origOnLine, configurable: true });
+  describe('collab status = "unsaved"', () => {
+    it('renders the cloud_refresh icon and the "Unsaved changes" tooltip', async () => {
+      el = await fixture({ collabStatus: 'unsaved' });
+      await nextFrame();
+      const cloud = el.shadowRoot.querySelector('.collab-status-cloud');
+      expect(cloud.classList.contains('collab-status-unsaved')).to.be.true;
+      expect(cloud.getAttribute('data-popup-content')).to.equal('Unsaved changes');
+      const use = cloud.querySelector('use');
+      expect(use.getAttribute('href')).to.equal('#cloud_refresh');
     });
   });
 
@@ -426,8 +414,8 @@ describe('DaTitle', () => {
       element.details = createDetails(opts.details || {});
       element.permissions = opts.permissions || ['read', 'write'];
       element._aemHrefs = {
-        preview: { origin: 'https://main--site--org.aem.page' },
-        prod: { origin: 'https://main--site--org.aem.live' },
+        preview: { origin: 'https://main--site--org.ent-aem.page' },
+        prod: { origin: 'https://main--site--org.ent-aem.live' },
       };
       // Stub _sendButton to avoid querying shadowRoot
       const fakeBtn = document.createElement('button');
@@ -444,7 +432,7 @@ describe('DaTitle', () => {
       window.open = (...args) => { opens.push(args); };
       window.fetch = () => Promise.resolve(new Response(
         JSON.stringify({
-          preview: { url: 'https://main--site--org.aem.page/test/page' },
+          preview: { url: 'https://main--site--org.ent-aem.page/test/page' },
           webPath: '/test/page',
         }),
         { status: 200 },
@@ -469,7 +457,6 @@ describe('DaTitle', () => {
 
     it('Publish path: previews then publishes and opens the live URL', async () => {
       const element = buildEl();
-      element._scheduled = { scheduled: false };
       element._lazyMods = new Map([
         ['da-schedule', Promise.resolve({ getExistingSchedule: async () => null })],
       ]);
@@ -507,17 +494,24 @@ describe('DaTitle', () => {
         ['da-dialog', Promise.resolve()],
         ['da-schedule', Promise.resolve({ getExistingSchedule: async () => ({ scheduled: true, scheduledPublish: '2026-12-31' }) })],
       ]);
-      element._scheduled = { scheduled: true, scheduledPublish: '2026-12-31', userId: 'u1' };
       let dialogShown = false;
       const origSetScheduledDialog = element.setScheduledDialog;
       element.setScheduledDialog = async () => {
         dialogShown = true;
         return false; // user cancels
       };
-      window.fetch = () => Promise.resolve(new Response(
-        JSON.stringify({ preview: { url: 'https://x' }, webPath: '/test/page' }),
-        { status: 200 },
-      ));
+      window.fetch = (url) => {
+        if (url.includes('snapshot-scheduler')) {
+          return Promise.resolve(new Response(
+            JSON.stringify({ scheduled: true, scheduledPublish: '2026-12-31' }),
+            { status: 200 },
+          ));
+        }
+        return Promise.resolve(new Response(
+          JSON.stringify({ preview: { url: 'https://x' }, webPath: '/test/page' }),
+          { status: 200 },
+        ));
+      };
       const opens = [];
       const savedOpen = window.open;
       window.open = (...args) => { opens.push(args); };
@@ -578,6 +572,22 @@ describe('DaTitle', () => {
         window.open = savedOpen;
       }
     });
+
+    it('Config view: does not save when the user has no write permission', async () => {
+      const element = buildEl({ details: { view: 'config' }, permissions: ['read'] });
+      element.sheet = [{
+        name: 'config',
+        getData: () => [['k'], ['v']],
+        getConfig: () => ({ columns: [{ width: '20' }] }),
+      }];
+      let fetchCalled = false;
+      window.fetch = () => {
+        fetchCalled = true;
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      };
+      await element.handleAction('save');
+      expect(fetchCalled).to.be.false;
+    });
   });
 
   describe('sidekickCacheBust', () => {
@@ -589,7 +599,7 @@ describe('DaTitle', () => {
       try { delete window.chrome; } catch { /* */ }
       const element = new DaTitle();
       // Should not throw
-      await element.sidekickCacheBust('https://main--site--org.aem.live/page');
+      await element.sidekickCacheBust('https://main--site--org.ent-aem.live/page');
     });
 
     it('Sends a cache-bust message to the configured extension id', async () => {
@@ -603,9 +613,9 @@ describe('DaTitle', () => {
         },
       };
       const element = new DaTitle();
-      await element.sidekickCacheBust('https://main--site--org.aem.live/page');
+      await element.sidekickCacheBust('https://main--site--org.ent-aem.live/page');
       expect(captured.opts.action).to.equal('bustCache');
-      expect(captured.opts.host).to.equal('main--site--org.aem.live');
+      expect(captured.opts.host).to.equal('main--site--org.ent-aem.live');
     });
 
     it('Reads the override extension id from localStorage when present', async () => {
@@ -621,7 +631,7 @@ describe('DaTitle', () => {
       };
       try {
         const element = new DaTitle();
-        await element.sidekickCacheBust('https://main--site--org.aem.live/page');
+        await element.sidekickCacheBust('https://main--site--org.ent-aem.live/page');
         expect(captured).to.equal('custom-id');
       } finally {
         window.localStorage.removeItem('aem-sidekick-id');
@@ -631,7 +641,7 @@ describe('DaTitle', () => {
     it('Swallows errors from sendMessage', async () => {
       window.chrome = { runtime: { sendMessage: () => Promise.reject(new Error('boom')) } };
       const element = new DaTitle();
-      await element.sidekickCacheBust('https://main--site--org.aem.live/page');
+      await element.sidekickCacheBust('https://main--site--org.ent-aem.live/page');
     });
   });
 
@@ -662,6 +672,34 @@ describe('DaTitle', () => {
       await nextFrame();
       const buttons = element.shadowRoot.querySelectorAll('.da-title-action');
       expect(buttons.length).to.be.at.least(2);
+      element.remove();
+    });
+
+    it('Disables the save button when the user has no write permission', async () => {
+      const element = await fixture({
+        details: createDetails({ view: 'config' }),
+        permissions: ['read'],
+      });
+      element._actions = { available: ['save'] };
+      element.requestUpdate();
+      await nextFrame();
+      await nextFrame();
+      const saveBtn = element.shadowRoot.querySelector('.da-title-action');
+      expect(saveBtn.disabled).to.be.true;
+      element.remove();
+    });
+
+    it('Leaves the save button enabled when the user has write permission', async () => {
+      const element = await fixture({
+        details: createDetails({ view: 'config' }),
+        permissions: ['read', 'write'],
+      });
+      element._actions = { available: ['save'] };
+      element.requestUpdate();
+      await nextFrame();
+      await nextFrame();
+      const saveBtn = element.shadowRoot.querySelector('.da-title-action');
+      expect(saveBtn.disabled).to.be.false;
       element.remove();
     });
   });

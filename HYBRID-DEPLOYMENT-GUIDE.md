@@ -331,7 +331,7 @@ const DA_ORIGINS = [
 
 const AEM_ORIGINS = [
   'https://admin.hlx.page',       // Keep for reference
-  'https://admin.gov-aem.page',   // ← ADD: Your helix-admin
+  'https://admin.ent-aem.page',   // ← ADD: Your helix-admin
 ];
 ```
 

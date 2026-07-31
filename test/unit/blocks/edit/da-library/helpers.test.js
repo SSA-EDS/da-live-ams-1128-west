@@ -126,12 +126,12 @@ describe('da-library/helpers exports', () => {
         .to.equal('https://content.ent-da.live/org/site/blocks/cards');
     });
 
-    it('Rewrites aem.live, hlx.page and hlx.live URLs the same way', () => {
+    it('Rewrites aem.live, ent-aem.page and ent-aem.live URLs the same way', () => {
       expect(aemToContentUrl('https://main--site--org.ent-aem.live/blocks/cards'))
         .to.equal('https://content.ent-da.live/org/site/blocks/cards');
-      expect(aemToContentUrl('https://main--site--org.hlx.page/blocks/cards'))
+      expect(aemToContentUrl('https://main--site--org.ent-aem.page/blocks/cards'))
         .to.equal('https://content.ent-da.live/org/site/blocks/cards');
-      expect(aemToContentUrl('https://feature--site--org.hlx.live/deep/nested/path'))
+      expect(aemToContentUrl('https://feature--site--org.ent-aem.live/deep/nested/path'))
         .to.equal('https://content.ent-da.live/org/site/deep/nested/path');
     });
 
@@ -151,22 +151,22 @@ describe('da-library/helpers exports', () => {
 
   describe('getItemDetails', () => {
     it('Parses an ent-aem.live URL', () => {
-      const result = getItemDetails({ path: 'https://main--repo--org.aem.live/folder/page' });
+      const result = getItemDetails({ path: 'https://main--repo--org.ent-aem.live/folder/page' });
       expect(result).to.deep.equal({ org: 'org', site: 'repo', pathname: '/folder/page' });
     });
 
-    it('Parses a content.da.live URL', () => {
-      const result = getItemDetails({ path: 'https://content.da.live/org/site/folder/page' });
+    it('Parses a content.ent-da.live URL', () => {
+      const result = getItemDetails({ path: 'https://content.ent-da.live/org/site/folder/page' });
       expect(result).to.deep.equal({ org: 'org', site: 'site', pathname: '/folder/page' });
     });
 
-    it('Falls back to admin.da.live shape', () => {
-      const result = getItemDetails({ path: 'https://admin.da.live/source/org/site/folder/page' });
+    it('Falls back to admin.ent-da.live shape', () => {
+      const result = getItemDetails({ path: 'https://admin.ent-da.live/source/org/site/folder/page' });
       expect(result).to.deep.equal({ org: 'org', site: 'site', pathname: '/folder/page' });
     });
 
     it('Reads value when no path is provided (templates path)', () => {
-      const result = getItemDetails({ value: 'https://main--repo--org.aem.live/page' });
+      const result = getItemDetails({ value: 'https://main--repo--org.ent-aem.live/page' });
       expect(result.org).to.equal('org');
     });
   });
@@ -452,6 +452,39 @@ describe('da-library/helpers/index getBlocks', () => {
     await getBlocks(['/cached-blocks.json']);
     await getBlocks(['/cached-blocks.json']);
     expect(calls).to.equal(1);
+  });
+
+  it('Returns blocks from the blocks sheet when response is multi-sheet', async () => {
+    window.fetch = () => Promise.resolve(new Response(
+      JSON.stringify({
+        ':type': 'multi-sheet',
+        ':names': ['templates', 'blocks', 'placeholders'],
+        ':version': 3,
+        templates: { total: 1, data: [{ name: 'tmpl', path: '/tmpl' }] },
+        blocks: { total: 1, data: [{ name: 'hero', path: '/blocks/hero' }] },
+        placeholders: { total: 0, data: [] },
+      }),
+      { status: 200 },
+    ));
+    const result = await getBlocks(['/multi-blocks.json']);
+    expect(result.length).to.equal(1);
+    expect(result[0].name).to.equal('hero');
+    expect(result[0].path).to.equal('/blocks/hero');
+  });
+
+  it('Falls back to first sheet data when single-sheet response has no blocks sheetname', async () => {
+    window.fetch = () => Promise.resolve(new Response(
+      JSON.stringify({
+        ':type': 'sheet',
+        ':sheetname': 'items',
+        total: 1,
+        data: [{ name: 'card', path: '/blocks/card' }],
+      }),
+      { status: 200 },
+    ));
+    const result = await getBlocks(['/no-blocks-sheet.json']);
+    expect(result.length).to.equal(1);
+    expect(result[0].name).to.equal('card');
   });
 });
 

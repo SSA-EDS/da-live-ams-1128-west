@@ -18,17 +18,20 @@ const {
   getDaMetadata,
   setDaMetadata,
   isURL,
-  saveToAem,
   saveDaConfig,
-  saveDaVersion,
   debounce,
   getDiffLabels,
   htmlToProse,
 } = await import('../../../../../blocks/edit/utils/helpers.js');
 
+const {
+  saveToAem,
+  saveDaVersion,
+} = await import('../../../../../blocks/shared/utils.js');
+
 // Skip the api.js hlx6 upgrade probe so source/config URLs stay on DA_ADMIN.
 const skipPing = (handler) => async (url, opts) => {
-  if (typeof url === 'string' && url.startsWith('https://admin.hlx.page/ping')) {
+  if (typeof url === 'string' && url.startsWith('https://admin.ent-aem.page/ping')) {
     return new Response('', { status: 200, headers: new Headers() });
   }
   return handler(url, opts);
@@ -766,6 +769,31 @@ describe('saveDaVersion', () => {
     };
     await saveDaVersion('/org/site/page');
     expect(captured.opts.body).to.equal(JSON.stringify({ label: 'Published' }));
+  });
+
+  it('Sends comment as a query param with no body on hlx6', async () => {
+    let captured;
+    window.fetch = (url, opts) => {
+      const u = String(url);
+      // The hlx6 upgrade probe — advertise the upgrade so the call routes to AEM.
+      if (u.startsWith('https://admin.ent-aem.page/ping')) {
+        return Promise.resolve(new Response('', {
+          status: 200,
+          headers: { 'x-api-upgrade-available': 'da-admin' },
+        }));
+      }
+      captured = { url: u, opts };
+      return Promise.resolve(new Response('', { status: 201 }));
+    };
+    try {
+      await saveDaVersion('/hlx6org/hlx6site/page', 'My Label');
+      expect(captured.url).to.contain('/hlx6org/sites/hlx6site/source/page/.versions');
+      expect(captured.url).to.contain('comment=My+Label');
+      expect(captured.opts.method).to.equal('POST');
+      expect(captured.opts.body).to.equal(undefined);
+    } finally {
+      window.localStorage.removeItem('hlx6-upgrade');
+    }
   });
 });
 

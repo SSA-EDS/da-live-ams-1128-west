@@ -16,11 +16,14 @@ function getEnv() {
   if (branch === 'main' && owner === 'adobe') {
     return 'https://da.live';
   }
-  if branch === 'main' && owner === 'ams-eds' {
-    return `https://ssa-da.live`;
+  if (branch === 'main' && owner === 'ssa-eds') {
+    return `https://ent-da.live`;
   }
-  return `https://${branch}--da-live--${owner}.aem.live`;
+  return `https://${branch}--da-live-ams-1128-west--${owner}.ent-aem.live`;
 }
 
 const ENV = (() => getEnv())();
 export default ENV;
+
+export const TEST_ORG = process.env.TEST_ORG || 'da-sites';
+export const TEST_SITE = process.env.TEST_SITE || 'da-status';
