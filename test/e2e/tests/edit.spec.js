@@ -9,17 +9,20 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../utils/fixtures.js';
 import ENV from '../utils/env.js';
 import {
   getQuery, getTestPageURL, tabBackward, fill, TEST_ORG, TEST_SITE,
 } from '../utils/page.js';
+import { dismissAlertBanner } from '../utils/utils.js';
 
-test('Update Document', async ({ browser, page }, workerInfo) => {
+test('Update Document', async ({ browser, page, trackCleanup }, workerInfo) => {
   test.setTimeout(30000);
 
   const url = getTestPageURL('edit1', workerInfo);
+  trackCleanup(url);
   await page.goto(url);
+  await page.waitForTimeout(2000);
   await page.getByText('Create document', { exact: true }).click();
   await expect(page.locator('div.ProseMirror')).toBeVisible();
   await expect(page.locator('div.ProseMirror')).toHaveAttribute('contenteditable', 'true');
@@ -38,18 +41,21 @@ test('Update Document', async ({ browser, page }, workerInfo) => {
   await expect(newPage.locator('div.ProseMirror')).toContainText(enteredText);
 });
 
-test('Create Delete Document', async ({ browser, page }, workerInfo) => {
+test('Create Delete Document', async ({ browser, page, trackCleanup }, workerInfo) => {
   test.setTimeout(30000);
 
   const url = getTestPageURL('edit2', workerInfo);
+  // Safety net: the test below deletes this via the UI already, but track it too
+  // in case that assertion fails partway through.
+  trackCleanup(url);
   const pageName = url.split('/').pop();
 
   await page.goto(`${ENV}/${getQuery()}#/${TEST_ORG}/${TEST_SITE}/tests`);
-  await page.locator('button.da-actions-new-button').click();
-  await page.locator('button:text("Document")').click();
-  await page.locator('input.da-actions-input').fill(pageName);
-
-  await page.locator('button:text("Create document")').click();
+  await expect(page.locator('button.da-actions-new-button')).toBeEnabled();
+  await page.locator('button.da-actions-new-button').click({ force: true });
+  await page.getByRole('menuitem', { name: 'Document' }).click();
+  await page.getByPlaceholder('document name').fill(pageName);
+  await page.getByRole('button', { name: 'Create' }).click();
   await expect(page.locator('div.ProseMirror')).toBeVisible();
   await expect(page.locator('div.ProseMirror')).toHaveAttribute('contenteditable', 'true');
   // Allow Y.js WebSocket to stabilize before typing
@@ -59,6 +65,7 @@ test('Create Delete Document', async ({ browser, page }, workerInfo) => {
 
   const newPage = await browser.newPage();
   await newPage.goto(`${ENV}/${getQuery()}#/${TEST_ORG}/${TEST_SITE}/tests`);
+  await dismissAlertBanner(newPage);
 
   await newPage.waitForTimeout(3000);
   await newPage.reload();
@@ -70,21 +77,24 @@ test('Create Delete Document', async ({ browser, page }, workerInfo) => {
   await newPage.waitForTimeout(500);
   await page.close(); // Close the original page to avoid it writing the content
 
+  await dismissAlertBanner(newPage);
   // There are 2 delete buttons, one on the Browse panel and another on the Search one
   // select the visible one.
-  await newPage.locator('button.delete-button').locator('visible=true').click();
+  await newPage.locator('button.delete-button').filter({ visible: true }).click();
 
   await newPage.waitForTimeout(1000);
   /* TODO REMOVE once #233 is fixed */ await newPage.reload();
   await expect(newPage.locator(`a[href="/edit#/${TEST_ORG}/${TEST_SITE}/tests/${pageName}"]`)).not.toBeVisible();
 });
 
-test('Change document by switching anchors', async ({ page }, workerInfo) => {
+test('Change document by switching anchors', async ({ page, trackCleanup }, workerInfo) => {
   test.setTimeout(60000);
 
   const url = getTestPageURL('edit3', workerInfo);
   const urlA = `${url}A`;
   const urlB = `${url}B`;
+  trackCleanup(urlA);
+  trackCleanup(urlB);
 
   await page.goto(urlA);
   await page.getByText('Create document', { exact: true }).click();
@@ -116,8 +126,10 @@ test('Change document by switching anchors', async ({ page }, workerInfo) => {
   await expect(page.locator('div.ProseMirror')).toBeVisible();
   await expect(page.locator('div.ProseMirror')).toHaveAttribute('contenteditable', 'true');
   // Allow Y.js WebSocket to stabilize before typing
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2000);
   await fill(page, 'page B');
+  await page.waitForTimeout(3000);
+
   // Verify the fill took effect locally before waiting for persistence
   await expect(page.locator('div.ProseMirror')).toContainText('page B');
   // Wait for Y.js to persist the content to the server
@@ -135,9 +147,10 @@ test('Change document by switching anchors', async ({ page }, workerInfo) => {
   await expect(page.locator('div.ProseMirror')).toContainText('page B');
 });
 
-test('Add code mark', async ({ page }, workerInfo) => {
+test('Add code mark', async ({ page, trackCleanup }, workerInfo) => {
   test.setTimeout(30000);
   const url = getTestPageURL('edit5', workerInfo);
+  trackCleanup(url);
   await page.goto(url);
   await page.getByText('Create document', { exact: true }).click();
   const proseMirror = page.locator('div.ProseMirror');
@@ -154,12 +167,12 @@ test('Add code mark', async ({ page }, workerInfo) => {
   // Forward
   for (let i = 0; i < 10; i += 1) {
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
   }
   await page.keyboard.press('`');
   for (let i = 0; i < 4; i += 1) {
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
   }
   await page.keyboard.press('`');
   // leave time for the code mark to be processed
@@ -174,13 +187,13 @@ test('Add code mark', async ({ page }, workerInfo) => {
   await page.keyboard.press('End');
   for (let i = 0; i < 6; i += 1) {
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
   }
   await page.keyboard.press('`');
   await page.locator('div.ProseMirror').locator('code');
   for (let i = 0; i < 5; i += 1) {
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
   }
   await page.keyboard.press('`');
   codeElement = proseMirror.locator('code');

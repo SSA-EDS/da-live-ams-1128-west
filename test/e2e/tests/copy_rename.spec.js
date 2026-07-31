@@ -9,17 +9,18 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../utils/fixtures.js';
 import ENV from '../utils/env.js';
 import {
   getQuery, getTestFolderURL, getTestPageURL, fill, TEST_ORG, TEST_SITE,
 } from '../utils/page.js';
+import { dismissAlertBanner } from '../utils/utils.js';
 
-test('Copy and Rename with Versioned document', async ({ page }, workerInfo) => {
+test('Copy and Rename with Versioned document', async ({ page, trackCleanup }, workerInfo) => {
   test.skip(
     TEST_SITE !== 'da-status',
     `
-On Helix 6 the copy and paste from one folder to another doesn't work yet, it fails on this line: 
+On Helix 6 the copy and paste from one folder to another doesn't work yet, it fails on this line:
 const link = await page.getByRole('link', { name: orgPageName });
     `,
   );
@@ -30,6 +31,8 @@ const link = await page.getByRole('link', { name: orgPageName });
 
   const pageURL = getTestPageURL('copyrename', workerInfo);
   const orgPageName = pageURL.split('/').pop();
+  // Safety net for a failure before the rename below actually happens.
+  trackCleanup(pageURL);
   await page.goto(pageURL);
   await page.getByText('Create document', { exact: true }).click();
   await expect(page.locator('div.ProseMirror')).toBeVisible();
@@ -61,13 +64,16 @@ const link = await page.getByRole('link', { name: orgPageName });
 
   // Go back to the directory view
   await page.goto(`${ENV}/${getQuery()}#/${TEST_ORG}/${TEST_SITE}/tests`);
+  await dismissAlertBanner(page);
 
   const copyFolderURL = getTestFolderURL('copy', workerInfo);
   const copyFolderName = copyFolderURL.split('/').pop();
-  await page.getByRole('button', { name: 'New' }).click();
-  await page.getByRole('button', { name: 'Folder' }).click();
-  await page.locator('input.da-actions-input').fill(copyFolderName);
-  await page.locator('input.da-actions-input').press('Enter');
+  trackCleanup(copyFolderURL, { isFolder: true });
+  await expect(page.getByRole('button', { name: 'New' })).toBeEnabled();
+  await page.getByRole('button', { name: 'New' }).click({ force: true });
+  await page.getByRole('menuitem', { name: 'Folder' }).click();
+  await page.getByPlaceholder('folder name').fill(copyFolderName);
+  await page.getByRole('button', { name: 'Create' }).click();
 
   const cpCheckbox = page.locator('div.da-item-list-item-inner').filter({ hasText: orgPageName })
     .locator('input[type="checkbox"][name="item-selected"]');
@@ -90,6 +96,8 @@ const link = await page.getByRole('link', { name: orgPageName });
   await page.goto(`${ENV}/${getQuery()}#/${TEST_ORG}/${TEST_SITE}/tests`);
   await page.reload(); // Clears any leftover selection, if any
 
+  await dismissAlertBanner(page);
+
   const checkbox = page.locator('div.da-item-list-item-inner').filter({ hasText: orgPageName })
     .locator('input[type="checkbox"][name="item-selected"]');
   await checkbox.focus();
@@ -100,6 +108,8 @@ const link = await page.getByRole('link', { name: orgPageName });
   await page.getByRole('button', { name: 'Rename' }).click();
   await page.locator(`input[value=${orgPageName}]`).fill(renPageName);
   await page.keyboard.press('Enter');
+  // The document now lives under its renamed path instead of pageURL.
+  trackCleanup(`${pageURL}ren`);
 
   // Open the renamed page
   await page.waitForTimeout(3000);

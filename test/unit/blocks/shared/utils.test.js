@@ -4,7 +4,9 @@ import {
   daFetch,
   etcFetch,
   aemAdmin,
+  aemAction,
   saveToDa,
+  saveDaVersion,
   getSheetByIndex,
   getSheetByName,
   getFirstSheet,
@@ -13,6 +15,7 @@ import {
   sanitizeName,
   fetchDaConfigs,
   getAuthToken,
+  isValidHref,
 } from '../../../../blocks/shared/utils.js';
 
 // daFetch's 401-no-token path lazy-loads the banner module, which resolves
@@ -680,6 +683,109 @@ describe('fetchDaConfigs', () => {
     const resolved = await results[0];
     expect(resolved).to.equal(null);
     expect(fetchCalled).to.be.false;
+  });
+});
+
+describe('saveDaVersion', () => {
+  let savedFetch;
+  beforeEach(() => { savedFetch = window.fetch; });
+  afterEach(() => { window.fetch = savedFetch; });
+
+  it('POSTs to the versionsource endpoint with the correct path and label', async () => {
+    let capturedUrl;
+    let capturedOpts;
+    window.fetch = (url, opts) => {
+      capturedUrl = url;
+      capturedOpts = opts;
+      return Promise.resolve(new Response('ok', { status: 200 }));
+    };
+
+    await saveDaVersion('/org/site/doc', 'Previewed');
+    expect(capturedUrl).to.include('/versionsource/org/site/doc');
+    expect(capturedOpts.method).to.equal('POST');
+    expect(JSON.parse(capturedOpts.body)).to.deep.equal({ label: 'Previewed' });
+  });
+
+  it('Silently swallows fetch errors', async () => {
+    window.fetch = () => Promise.reject(new Error('network error'));
+    await saveDaVersion('/org/site/doc', 'Published');
+  });
+});
+
+describe('aemAction', () => {
+  let savedFetch;
+  beforeEach(() => {
+    savedFetch = window.fetch;
+    window.localStorage.removeItem('nx-ims');
+  });
+  afterEach(() => {
+    window.fetch = savedFetch;
+    window.localStorage.removeItem('nx-ims');
+  });
+
+  it('Returns a human-readable error message when the AEM preview fetch fails', async () => {
+    window.fetch = () => Promise.resolve(new Response('forbidden', { status: 403 }));
+
+    const result = await aemAction('/org/site/doc', 'preview');
+    expect(result.error).to.exist;
+    expect(result.error.type).to.equal('error');
+    expect(result.error.message).to.equal('Not authorized to preview');
+  });
+
+  it('Returns cancelled when publish is blocked by onScheduled returning false', async () => {
+    const scheduleJson = { scheduled: true, scheduledPublish: new Date().toISOString() };
+    window.fetch = (url) => {
+      if (url.includes('/preview/')) {
+        return Promise.resolve(new Response(
+          JSON.stringify({ preview: { url: 'https://x.hlx.page/' }, webPath: '/' }),
+          { status: 200 },
+        ));
+      }
+      return Promise.resolve(new Response(JSON.stringify(scheduleJson), { status: 200 }));
+    };
+
+    const result = await aemAction('/org/site/doc', 'publish', { onScheduled: async () => false });
+    expect(result.cancelled).to.be.true;
+  });
+});
+
+describe('isValidHref', () => {
+  it('Accepts a root-relative path', () => {
+    expect(isValidHref('/foo/bar')).to.be.true;
+  });
+
+  it('Accepts an https URL', () => {
+    expect(isValidHref('https://example.com/foo')).to.be.true;
+  });
+
+  it('Rejects an http URL', () => {
+    expect(isValidHref('http://example.com/foo')).to.be.false;
+  });
+
+  it('Rejects a javascript: URL', () => {
+    expect(isValidHref(`${'javascript'}:alert(1)`)).to.be.false;
+  });
+
+  it('Rejects a data: URL', () => {
+    expect(isValidHref('data:text/html,<script>alert(1)</script>')).to.be.false;
+  });
+
+  it('Rejects a protocol-relative URL', () => {
+    expect(isValidHref('//evil.example.com')).to.be.false;
+  });
+
+  it('Rejects a bare host with no scheme or leading slash', () => {
+    expect(isValidHref('evil.example.com')).to.be.false;
+  });
+
+  it('Rejects an empty string', () => {
+    expect(isValidHref('')).to.be.false;
+  });
+
+  it('Rejects non-string input', () => {
+    expect(isValidHref(undefined)).to.be.false;
+    expect(isValidHref(null)).to.be.false;
+    expect(isValidHref({})).to.be.false;
   });
 });
 

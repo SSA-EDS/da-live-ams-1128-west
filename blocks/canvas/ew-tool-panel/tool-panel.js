@@ -6,6 +6,7 @@ import {
 } from '../utils/panel.js';
 
 const { loadStyle } = await import(`${getNx()}/utils/utils.js`);
+const { PANEL_EVENT } = await import(`${getNx()}/utils/panel.js`);
 
 await import(`${getNx()}/blocks/shared/picker/picker.js`);
 
@@ -28,13 +29,6 @@ class EwToolPanel extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.shadowRoot.adoptedStyleSheets = [style];
-    this._onShowPanel = ({ detail }) => this.showPanel(detail?.panelName);
-    document.addEventListener('nx-show-panel', this._onShowPanel);
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    document.removeEventListener('nx-show-panel', this._onShowPanel);
   }
 
   get _fullsizeDialogView() {
@@ -52,7 +46,8 @@ class EwToolPanel extends LitElement {
         items.push({ section: v.section });
         lastSection = v.section;
       }
-      const opensExternally = v.experience === 'window' || v.experience === 'fullsize-dialog';
+      const opensExternally = v.experience === 'window' || v.experience === 'fullsize-dialog'
+        || v.experience === 'modal';
       items.push({
         value: v.id,
         label: v.label,
@@ -153,6 +148,10 @@ class EwToolPanel extends LitElement {
       this._fullsizeDialogViewId = name;
       return;
     }
+    if (consumer.experience === 'modal') {
+      await consumer.openModal?.();
+      return;
+    }
     if (!this._loaded[name]) {
       this._loaded[name] = await consumer.load();
     }
@@ -183,7 +182,9 @@ class EwToolPanel extends LitElement {
   }
 
   _close() {
-    this.dispatchEvent(new CustomEvent('nx-panel-close', { bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent(PANEL_EVENT.CLOSE, { bubbles: true, composed: true }),
+    );
   }
 
   _onFullsizeDialogClose() {

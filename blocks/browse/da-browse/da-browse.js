@@ -1,29 +1,22 @@
 import { LitElement, html, nothing } from 'da-lit';
 import { getFirstSheet, fetchDaConfigs } from '../../shared/utils.js';
 import { getNx, sanitizePathParts, getNxEWFlags } from '../../../scripts/utils.js';
+import { getChatPanelContent } from '../../shared/chat-panel.js';
 
 // Components
-import '../da-breadcrumbs/da-breadcrumbs.js';
 import '../da-new/da-new.js';
 import '../da-search/da-search.js';
 import '../da-list/da-list.js';
 
 const { loadStyle } = await import(`${getNx()}/utils/utils.js`);
-const { getPanelStore, openPanel } = await import(`${getNx()}/utils/panel.js`);
+await import(`${getNx()}/blocks/shared/breadcrumb/breadcrumb.js`);
+const { CHAT_EVENT } = await import(`${getNx()}/blocks/chat/constants.js`);
+const { PANEL_EVENT, wasPanelOpen, registerPanelSection } = await import(`${getNx()}/utils/panel.js`);
 
 const style = await loadStyle(import.meta.url);
 
-async function openChatPanel() {
-  const store = getPanelStore();
-  const width = store.before?.width ?? '400px';
-  return openPanel({
-    position: 'before',
-    width,
-    getContent: async () => {
-      await import(`${getNx()}/blocks/chat/chat.js`);
-      return document.createElement('nx-chat');
-    },
-  });
+function openChatPanel() {
+  document.dispatchEvent(new CustomEvent(PANEL_EVENT.OPEN, { detail: { section: 'chat' } }));
 }
 
 export default class DaBrowse extends LitElement {
@@ -32,6 +25,43 @@ export default class DaBrowse extends LitElement {
     _tabItems: { state: true },
     _searchItems: { state: true },
     _chatEnabled: { state: true },
+  };
+
+  _browseSelKeys = new Set();
+
+  _clearBrowseSelection() {
+    for (const key of this._browseSelKeys) {
+      document.dispatchEvent(new CustomEvent(CHAT_EVENT.ADD_TO_CHAT, { detail: { key } }));
+    }
+    this._browseSelKeys = new Set();
+  }
+
+  _handleBrowseSelection = ({ detail: { items } }) => {
+    const prevKeys = this._browseSelKeys;
+    const nextKeys = new Set(items.map((i) => i.path));
+
+    for (const key of prevKeys) {
+      if (!nextKeys.has(key)) {
+        document.dispatchEvent(new CustomEvent(CHAT_EVENT.ADD_TO_CHAT, { detail: { key } }));
+      }
+    }
+
+    for (const item of items) {
+      if (!prevKeys.has(item.path)) {
+        document.dispatchEvent(new CustomEvent(CHAT_EVENT.ADD_TO_CHAT, {
+          detail: {
+            key: item.path,
+            id: item.path,
+            type: item.ext ? 'file' : 'folder',
+            label: item.name,
+            blockName: item.name,
+            innerText: `Selected repository path: ${item.path.replace(/^\//, '')}`,
+          },
+        }));
+      }
+    }
+
+    this._browseSelKeys = nextKeys;
   };
 
   constructor() {
@@ -55,20 +85,11 @@ export default class DaBrowse extends LitElement {
     this.shadowRoot.adoptedStyleSheets = [style];
     this._handleShortcuts = this.handleShortcuts.bind(this);
     document.addEventListener('keydown', this._handleShortcuts);
-
-    this._handleOpenChat = async ({ detail }) => {
-      if (!this._chatEnabled) return;
-      const aside = await openChatPanel();
-      if (!detail?.text) return;
-      aside?.querySelector('nx-chat')?.setPrompt(detail.text, { autoSend: detail.autoSend });
-    };
-    document.addEventListener('nx-open-chat-panel', this._handleOpenChat);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener('keydown', this._handleShortcuts);
-    document.removeEventListener('nx-open-chat-panel', this._handleOpenChat);
   }
 
   handleShortcuts(e) {
@@ -97,6 +118,7 @@ export default class DaBrowse extends LitElement {
     if (props.has('details') && this.details) {
       const prevDetails = props.get('details');
       const orgChanged = prevDetails?.org !== this.details.org;
+      if (prevDetails?.fullpath !== this.details.fullpath) this._clearBrowseSelection();
 
       // EW flag lives at site level — re-check whenever org or site changes,
       // and do this before getEditor so the default editor reflects EW state
@@ -105,8 +127,12 @@ export default class DaBrowse extends LitElement {
         const { isEWEnabled } = await getNxEWFlags();
         this._chatEnabled = await isEWEnabled({ org, site });
         if (this._chatEnabled) {
-          const store = getPanelStore();
-          if (store.before && !store.before.fragment) openChatPanel();
+          registerPanelSection('chat', {
+            position: 'before',
+            width: '400px',
+            getContent: getChatPanelContent(),
+          });
+          if (wasPanelOpen('chat')) openChatPanel();
         }
       }
 
@@ -199,6 +225,7 @@ export default class DaBrowse extends LitElement {
         fullpath="${fullpath}"
         editor="${this.editor}"
         @onpermissions=${this.handlePermissions}
+        @selectionchanged=${type === 'browse' && this._chatEnabled ? this._handleBrowseSelection : nothing}
         select="${select ? true : nothing}"
         sort="${sort ? true : nothing}"
         drag="${drag ? true : nothing}"></da-list>`;
@@ -231,13 +258,21 @@ export default class DaBrowse extends LitElement {
     })}
       </div>
       <div class="da-list-header context-${this.context}">
-        <da-breadcrumbs .details="${this.details}"></da-breadcrumbs>
-        ${this._tabItems.map((tab) => html`
-          <div class="da-list-header-action" data-visible="${tab.selected}">
-            ${tab.id === 'browse' ? this.renderNew() : this.renderSearch()}
+          <div class="da-breadcrumb-action-area">
+            <div class="da-breadcrumb-area">
+              <nx-breadcrumb .pathSegments="${this.details.fullpath.split('/').filter(Boolean)}"></nx-breadcrumb>
+              ${!this.details.path ? html`
+                <a class="da-breadcrumb-config" href="/config#${this.details.fullpath}/" aria-label="Config">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><use href="/img/icons/s2-icon-settings-20-n.svg#icon"></use></svg>
+                </a>` : nothing}
+            </div>
+            ${this._tabItems.map((tab) => html`
+              <div class="da-list-header-action" data-visible="${tab.selected}">
+                ${tab.id === 'browse' ? this.renderNew() : this.renderSearch()}
+              </div>
+            `)}
           </div>
-        `)}
-      </div>
+        </div>
       ${this._tabItems.map((tab) => html`
         <div class="da-tabpanel" id="tabpanel-${tab.id}" role="grid" aria-labelledby="tab-${tab.id}" data-visible="${tab.selected}">
           ${tab.id === 'browse' ? this.renderList(tab.id, this.details.fullpath, true, true, true) : this.renderList(tab.id, null, false, false, false)}
